@@ -27,11 +27,11 @@ export default function Layout({ children, activeTab, setActiveTab, user, onLogo
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'new-sampling', label: 'Nova Amostragem', icon: PlusCircle },
-    { id: 'checklist', label: 'Checklist Ativo', icon: ClipboardCheck },
+    { id: 'new-sampling', label: 'Nova Amostragem', icon: PlusCircle, roles: ['admin', 'user'] },
+    { id: 'checklist', label: 'Checklist Ativo', icon: ClipboardCheck, roles: ['admin', 'user'] },
     { id: 'corrective-actions', label: 'Ações Corretivas', icon: AlertCircle },
     { id: 'history', label: 'Histórico', icon: History },
-  ];
+  ].filter(item => !user?.isVisitor || !item.roles);
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
@@ -111,7 +111,12 @@ export default function Layout({ children, activeTab, setActiveTab, user, onLogo
             )}
             {isSidebarOpen && (
               <div className="flex flex-col overflow-hidden">
-                <span className="text-sm font-medium truncate">{user?.displayName || 'Usuário'}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium truncate">{user?.displayName || 'Usuário'}</span>
+                  {user?.isVisitor && (
+                    <span className="text-[8px] bg-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded font-bold">VISITANTE</span>
+                  )}
+                </div>
                 <span className="text-[10px] text-slate-500 truncate">{user?.email}</span>
               </div>
             )}

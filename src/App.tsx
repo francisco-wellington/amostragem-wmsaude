@@ -6,20 +6,20 @@
 import React, { useEffect, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 import Layout from './components/Layout';
-import {
-  InventoryItem,
-  InspectionSession,
-  CorrectiveAction
+import { 
+  InventoryItem, 
+  InspectionSession, 
+  CorrectiveAction 
 } from './types';
-import {
-  Card,
-  CardContent,
-  CardHeader,
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
   CardTitle,
   CardDescription
 } from '@/components/ui/card';
-import {
-  fetchInventoryData,
+import { 
+  fetchInventoryData, 
   saveSession,
   deleteSession,
   saveAction,
@@ -30,7 +30,7 @@ import {
 } from './lib/inventoryService';
 import { auth, googleProvider } from './lib/firebase';
 import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
-import { LogIn, LogOut, User as UserIcon, Package } from 'lucide-react';
+import { LogIn, LogOut, User as UserIcon, Package, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // Views
@@ -41,7 +41,7 @@ import CorrectiveActionsView from './views/CorrectiveActionsView';
 import HistoryView from './views/HistoryView';
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<(User & { isVisitor?: boolean }) | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [navParams, setNavParams] = useState<any>(null);
@@ -74,9 +74,24 @@ export default function App() {
     }
   };
 
+  const handleVisitorAccess = () => {
+    setUser({
+      uid: 'visitor',
+      displayName: 'Visitante',
+      email: 'visitante@wmsaude.com.br',
+      photoURL: null,
+      isVisitor: true
+    } as any);
+    toast.info('Acessando em modo de visualização.');
+  };
+
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      if (user?.isVisitor) {
+        setUser(null);
+      } else {
+        await signOut(auth);
+      }
       setActiveTab('dashboard');
       toast.info('Sessão encerrada.');
     } catch (error) {
@@ -88,7 +103,7 @@ export default function App() {
     // Subscribe to real-time updates for everyone
     const unsubSessions = subscribeToSessions(setSessions);
     const unsubActions = subscribeToActions(setActions);
-
+    
     return () => {
       unsubSessions?.();
       unsubActions?.();
@@ -203,9 +218,9 @@ export default function App() {
           <div className="h-2 bg-blue-600 w-full" />
           <CardHeader className="text-center pb-2">
             <div className="flex justify-center mb-4">
-              <img
-                src="https://raw.githubusercontent.com/francisco-wellington/logos-wm/ac3c8394a54a53584815e1d98d699464508d3e10/Logo_azul_new.png"
-                alt="WM Saúde Logo"
+              <img 
+                src="https://raw.githubusercontent.com/francisco-wellington/logos-wm/ac3c8394a54a53584815e1d98d699464508d3e10/Logo_azul_new.png" 
+                alt="WM Saúde Logo" 
                 className="h-20 w-auto"
                 referrerPolicy="no-referrer"
               />
@@ -216,13 +231,33 @@ export default function App() {
             <div className="text-center space-y-2">
               <p className="text-slate-600">Para acessar o sistema, por favor identifique-se.</p>
             </div>
-            <Button
-              onClick={handleLogin}
-              className="w-full h-12 text-lg font-semibold bg-white border-2 border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-blue-300 transition-all flex items-center justify-center gap-3"
-            >
-              <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-              Entrar com Google
-            </Button>
+            <div className="space-y-3">
+              <Button 
+                onClick={handleLogin} 
+                className="w-full h-12 text-lg font-semibold bg-white border-2 border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-blue-300 transition-all flex items-center justify-center gap-3"
+              >
+                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+                Entrar com Google
+              </Button>
+              
+              <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-slate-200" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-slate-400">Ou</span>
+                </div>
+              </div>
+
+              <Button 
+                variant="ghost"
+                onClick={handleVisitorAccess} 
+                className="w-full h-12 text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-3"
+              >
+                <Eye className="w-5 h-5" />
+                Acessar como Visitante
+              </Button>
+            </div>
           </CardContent>
           <div className="p-6 bg-slate-50 text-center">
             <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Acesso Restrito</p>
@@ -236,41 +271,44 @@ export default function App() {
     <>
       <Layout activeTab={activeTab} setActiveTab={handleNavigate} user={user} onLogout={handleLogout}>
         {activeTab === 'dashboard' && (
-          <DashboardView
-            sessions={sessions}
-            inventory={inventory}
+          <DashboardView 
+            sessions={sessions} 
+            inventory={inventory} 
             actions={actions}
             onNavigate={handleNavigate}
             onRefresh={handleRefresh}
+            isVisitor={user?.isVisitor}
           />
         )}
         {activeTab === 'new-sampling' && (
-          <NewSamplingView
-            inventory={inventory}
-            onStartSession={handleStartSession}
+          <NewSamplingView 
+            inventory={inventory} 
+            onStartSession={handleStartSession} 
             preSelectedCity={navParams?.city}
             preSelectedLocality={navParams?.locality}
           />
         )}
         {activeTab === 'checklist' && (
-          <ChecklistView
-            session={activeSession}
+          <ChecklistView 
+            session={activeSession} 
             onUpdateSession={handleUpdateSession}
             onCompleteSession={handleCompleteSession}
             onCancelSession={handleCancelSession}
           />
         )}
         {activeTab === 'corrective-actions' && (
-          <CorrectiveActionsView
-            actions={actions}
+          <CorrectiveActionsView 
+            actions={actions} 
             inventory={inventory}
             onUpdateAction={handleUpdateAction}
+            isVisitor={user?.isVisitor}
           />
         )}
         {activeTab === 'history' && (
-          <HistoryView
-            sessions={sessions}
+          <HistoryView 
+            sessions={sessions} 
             onEditSession={handleEditSession}
+            isVisitor={user?.isVisitor}
           />
         )}
       </Layout>

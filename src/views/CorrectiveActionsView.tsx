@@ -41,9 +41,10 @@ interface CorrectiveActionsViewProps {
   actions: CorrectiveAction[];
   inventory: InventoryItem[];
   onUpdateAction: (action: CorrectiveAction) => void;
+  isVisitor?: boolean;
 }
 
-export default function CorrectiveActionsView({ actions, inventory, onUpdateAction }: CorrectiveActionsViewProps) {
+export default function CorrectiveActionsView({ actions, inventory, onUpdateAction, isVisitor }: CorrectiveActionsViewProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAction, setSelectedAction] = useState<CorrectiveAction | null>(null);
   const [actionText, setActionText] = useState('');
@@ -142,7 +143,7 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
                                 setSelectedAction(action);
                               }}
                             >
-                              {action.resolved ? 'Ver Detalhes' : 'Resolver'}
+                              {action.resolved || isVisitor ? 'Ver Detalhes' : 'Resolver'}
                               <ExternalLink className="w-4 h-4 ml-2" />
                             </Button>
                           }
@@ -174,7 +175,7 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
                             )}
                           </div>
                           <DialogFooter>
-                            {!action.resolved && (
+                            {!action.resolved && !isVisitor && (
                               <Button 
                                 className="w-full bg-blue-600 hover:bg-blue-700"
                                 onClick={() => handleResolve(action)}

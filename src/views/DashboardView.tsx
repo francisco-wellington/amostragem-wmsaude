@@ -49,9 +49,10 @@ interface DashboardViewProps {
   actions: CorrectiveAction[];
   onNavigate: (tab: string, params?: any) => void;
   onRefresh?: () => void;
+  isVisitor?: boolean;
 }
 
-export default function DashboardView({ sessions, inventory, actions, onNavigate, onRefresh }: DashboardViewProps) {
+export default function DashboardView({ sessions, inventory, actions, onNavigate, onRefresh, isVisitor }: DashboardViewProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [localityFilter, setLocalityFilter] = useState<string>('Todas');
   const [cityFilter, setCityFilter] = useState<string>('Todas');
@@ -449,14 +450,16 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
                         <span className="text-sm font-medium text-slate-700 truncate">{item.locality}</span>
                         <span className="text-[10px] text-slate-400 font-bold uppercase">{item.city}</span>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="ml-auto text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-0 h-8 w-8"
-                        onClick={() => onNavigate('new-sampling', { city: item.city, locality: item.locality })}
-                      >
-                        <PlusCircle className="w-4 h-4" />
-                      </Button>
+                      {!isVisitor && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="ml-auto text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-0 h-8 w-8"
+                          onClick={() => onNavigate('new-sampling', { city: item.city, locality: item.locality })}
+                        >
+                          <PlusCircle className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -543,13 +546,15 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
               <div className="h-full flex flex-col items-center justify-center text-center py-8">
                 <Package className="w-12 h-12 text-slate-200 mb-4" />
                 <p className="text-slate-500 text-sm">Nenhuma inspeção realizada ainda.</p>
-                <Button 
-                  variant="link" 
-                  className="mt-2 text-blue-600"
-                  onClick={() => onNavigate('new-sampling')}
-                >
-                  Iniciar agora
-                </Button>
+                {!isVisitor && (
+                  <Button 
+                    variant="link" 
+                    className="mt-2 text-blue-600"
+                    onClick={() => onNavigate('new-sampling')}
+                  >
+                    Iniciar agora
+                  </Button>
+                )}
               </div>
             )}
           </CardContent>

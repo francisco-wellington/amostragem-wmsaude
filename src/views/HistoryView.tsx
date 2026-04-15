@@ -35,9 +35,10 @@ import autoTable from 'jspdf-autotable';
 interface HistoryViewProps {
   sessions: InspectionSession[];
   onEditSession?: (session: InspectionSession) => void;
+  isVisitor?: boolean;
 }
 
-export default function HistoryView({ sessions, onEditSession }: HistoryViewProps) {
+export default function HistoryView({ sessions, onEditSession, isVisitor }: HistoryViewProps) {
   const sortedSessions = [...sessions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const exportToPDF = (session: InspectionSession) => {
@@ -260,15 +261,17 @@ export default function HistoryView({ sessions, onEditSession }: HistoryViewProp
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          onClick={() => onEditSession?.(session)}
-                        >
-                          <Edit3 className="w-4 h-4 mr-2" />
-                          Editar
-                        </Button>
+                        {!isVisitor && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            onClick={() => onEditSession?.(session)}
+                          >
+                            <Edit3 className="w-4 h-4 mr-2" />
+                            Editar
+                          </Button>
+                        )}
                         <Button 
                           variant="ghost" 
                           size="sm"
