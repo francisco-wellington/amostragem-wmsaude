@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "InspectionSession": {
+      "title": "InspectionSession",
+      "description": "Uma sessão de auditoria de patrimônio",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "locality": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "sampleMode": { "type": "string", "enum": ["aleatoria", "sistematica", "manual"] },
+        "items": { "type": "array" },
+        "results": { "type": "object" },
+        "completed": { "type": "boolean" }
+      },
+      "required": ["id", "locality", "date", "sampleMode", "items", "results", "completed"]
+    },
+    "CorrectiveAction": {
+      "title": "CorrectiveAction",
+      "description": "Uma ação corretiva gerada a partir de uma não conformidade",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "patrimony": { "type": "string" },
+        "description": { "type": "string" },
+        "locality": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "resolved": { "type": "boolean" },
+        "resolutionDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "sessionId", "patrimony", "description", "locality", "date", "resolved"]
+    }
+  },
+  "firestore": {
+    "/sessions/{sessionId}": {
+      "schema": "InspectionSession",
+      "description": "Sessões de inspeção"
+    },
+    "/actions/{actionId}": {
+      "schema": "CorrectiveAction",
+      "description": "Ações corretivas"
+    }
+  }
+}

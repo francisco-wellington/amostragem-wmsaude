@@ -1,0 +1,8 @@
+{
+  "name": "Sistema de Amostragem - WM Saúde",
+  "description": "Sistema moderno de gestão de inventário por amostragem para auditoria rápida e padronizada.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": []
+}

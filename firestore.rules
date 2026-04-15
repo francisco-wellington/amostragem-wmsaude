@@ -1,0 +1,86 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: sessions
+    // Document ID: sessionId
+    // Fields:
+    //   - id: string (required)
+    //   - locality: string (required)
+    //   - date: string (required, ISO 8601)
+    //   - sampleMode: string (required, enum: aleatoria, sistematica, manual)
+    //   - items: list (required)
+    //   - results: map (required)
+    //   - completed: bool (required)
+    //   - userId: string (required)
+    //
+    // Collection: actions
+    // Document ID: actionId
+    // Fields:
+    //   - id: string (required)
+    //   - sessionId: string (required)
+    //   - patrimony: string (required)
+    //   - description: string (required)
+    //   - locality: string (required)
+    //   - date: string (required, ISO 8601)
+    //   - resolved: bool (required)
+    //   - resolutionDate: string (optional)
+    //   - userId: string (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isValidSession(data) {
+      return data.keys().hasAll(['id', 'locality', 'date', 'sampleMode', 'items', 'results', 'completed', 'userId']) &&
+             data.id is string &&
+             data.locality is string && data.locality.size() < 500 &&
+             data.date is string &&
+             data.sampleMode in ['aleatoria', 'sistematica', 'manual'] &&
+             data.items is list &&
+             data.results is map &&
+             data.completed is bool &&
+             data.userId == request.auth.uid;
+    }
+
+    function isValidAction(data) {
+      return data.keys().hasAll(['id', 'sessionId', 'patrimony', 'description', 'locality', 'date', 'resolved', 'userId']) &&
+             data.id is string &&
+             data.sessionId is string &&
+             data.patrimony is string &&
+             data.description is string && data.description.size() < 2000 &&
+             data.locality is string &&
+             data.date is string &&
+             data.resolved is bool &&
+             data.userId == request.auth.uid;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /sessions/{sessionId} {
+      allow read, write: if true;
+    }
+
+    match /actions/{actionId} {
+      allow read, write: if true;
+    }
+  }
+}
