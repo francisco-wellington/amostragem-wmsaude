@@ -257,6 +257,13 @@ export default function App() {
                 <Eye className="w-5 h-5" />
                 Acessar como Visitante
               </Button>
+
+              <div className="pt-2">
+                <p className="text-[11px] text-slate-400 text-center leading-relaxed">
+                  O modo visitante permite apenas a <strong>visualização de dados</strong>. 
+                  A realização de inspeções e edições é restrita a pessoal autorizado via login.
+                </p>
+              </div>
             </div>
           </CardContent>
           <div className="p-6 bg-slate-50 text-center">
