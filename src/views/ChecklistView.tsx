@@ -32,6 +32,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { OverlayLoading } from '../components/LoadingUI';
 import { 
   Dialog,
   DialogContent,
@@ -55,6 +56,7 @@ export default function ChecklistView({ session, onUpdateSession, onCompleteSess
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!session) {
@@ -66,6 +68,19 @@ export default function ChecklistView({ session, onUpdateSession, onCompleteSess
       </div>
     );
   }
+
+  const handleFinalize = async () => {
+    if (!session) return;
+    setIsFinalizing(true);
+    try {
+      await onCompleteSession(session);
+    } catch (error) {
+      console.error('Erro ao finalizar:', error);
+      toast.error('Ocorreu um erro ao salvar a inspeção.');
+    } finally {
+      setIsFinalizing(false);
+    }
+  };
 
   const currentItem = session.items[currentIndex];
   const currentResult = session.results[currentItem.Patrimônio];
@@ -399,8 +414,8 @@ export default function ChecklistView({ session, onUpdateSession, onCompleteSess
             <Button variant="outline" onClick={() => setIsSummaryOpen(false)}>Voltar</Button>
             <Button 
               className="bg-green-600 hover:bg-green-700"
-              disabled={!isComplete}
-              onClick={() => onCompleteSession(session)}
+              disabled={!isComplete || isFinalizing}
+              onClick={handleFinalize}
             >
               <Save className="w-4 h-4 mr-2" />
               Finalizar e Salvar
@@ -408,6 +423,8 @@ export default function ChecklistView({ session, onUpdateSession, onCompleteSess
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <OverlayLoading show={isFinalizing} message="Finalizando e registrando inspeção..." />
 
       {/* Cancel Confirmation Dialog */}
       <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>

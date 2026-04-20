@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -23,12 +23,16 @@ import {
   FileDown,
   Calendar,
   MapPin,
-  Edit3
+  Edit3,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { InspectionSession } from '../types';
+import { toast } from 'sonner';
 import Papa from 'papaparse';
 import { cn } from '@/lib/utils';
+import { OverlayLoading } from '../components/LoadingUI';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -39,10 +43,23 @@ interface HistoryViewProps {
 }
 
 export default function HistoryView({ sessions, onEditSession, isVisitor }: HistoryViewProps) {
+  const [isExporting, setIsExporting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+  
   const sortedSessions = [...sessions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  
+  const totalPages = Math.ceil(sortedSessions.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedSessions = sortedSessions.slice(startIndex, startIndex + itemsPerPage);
 
-  const exportToPDF = (session: InspectionSession) => {
-    const doc = new jsPDF();
+  const exportToPDF = async (session: InspectionSession) => {
+    setIsExporting(true);
+    // Allow UI to update before heavy PDF work
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    try {
+      const doc = new jsPDF();
     const dateStr = new Date(session.date).toLocaleDateString('pt-BR');
     
     // Header
@@ -126,6 +143,12 @@ export default function HistoryView({ sessions, onEditSession, isVisitor }: Hist
 
     const fileName = `Relatorio_${session.locality.replace(/\s+/g, '_')}_${new Date(session.date).toISOString().split('T')[0]}.pdf`;
     doc.save(fileName);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Erro ao gerar o relatório PDF.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const exportToCSV = (session: InspectionSession) => {
@@ -194,8 +217,8 @@ export default function HistoryView({ sessions, onEditSession, isVisitor }: Hist
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedSessions.length > 0 ? (
-              sortedSessions.map((session) => {
+            {paginatedSessions.length > 0 ? (
+              paginatedSessions.map((session) => {
                 const results = Object.values(session.results);
                 const conforme = results.filter(r => r.status === 'conforme').length;
                 const rate = results.length > 0 ? (conforme / results.length) * 100 : 0;
@@ -303,7 +326,40 @@ export default function HistoryView({ sessions, onEditSession, isVisitor }: Hist
             )}
           </TableBody>
         </Table>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between p-4 bg-slate-50 border-t border-slate-100">
+            <div className="text-xs text-slate-500">
+              Mostrando {startIndex + 1} até {Math.min(startIndex + itemsPerPage, sortedSessions.length)} de {sortedSessions.length} registros
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <div className="text-xs font-bold text-slate-700 min-w-[3rem] text-center">
+                Pág. {currentPage} de {totalPages}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
+      
+      <OverlayLoading show={isExporting} message="Gerando arquivo PDF..." />
     </div>
   );
 }

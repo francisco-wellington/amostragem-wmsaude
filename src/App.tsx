@@ -6,6 +6,8 @@
 import React, { useEffect, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 import Layout from './components/Layout';
+import { ConnectivityIndicator } from './components/ConnectivityIndicator';
+import { LoadingScreen } from './components/LoadingUI';
 import { 
   InventoryItem, 
   InspectionSession, 
@@ -203,12 +205,7 @@ export default function App() {
   };
 
   if (authLoading || loading) {
-    return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
-        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-slate-600 font-medium">Carregando...</p>
-      </div>
-    );
+    return <LoadingScreen message="Inicializando Sistema..." />;
   }
 
   if (!user) {
@@ -276,6 +273,7 @@ export default function App() {
 
   return (
     <>
+      <ConnectivityIndicator />
       <Layout activeTab={activeTab} setActiveTab={handleNavigate} user={user} onLogout={handleLogout}>
         {activeTab === 'dashboard' && (
           <DashboardView 

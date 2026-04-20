@@ -41,6 +41,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { ButtonLoading } from '../components/LoadingUI';
 import { InspectionSession, InventoryItem, CorrectiveAction, InspectionResult } from '../types';
 
 interface DashboardViewProps {
@@ -57,6 +58,15 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
   const [localityFilter, setLocalityFilter] = useState<string>('Todas');
   const [cityFilter, setCityFilter] = useState<string>('Todas');
   const [yearFilter, setYearFilter] = useState<string>(new Date().getFullYear().toString());
+
+  // Refs for scrolling to highlighted items
+  const highlightedRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (localityFilter !== 'Todas' && highlightedRef.current) {
+      highlightedRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [localityFilter]);
 
   // Get all unique cities for the filter
   const cities = useMemo(() => {
@@ -212,18 +222,26 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
             <Button
               variant="ghost"
               size="sm"
-              className="text-slate-400 hover:text-blue-600 transition-colors"
+              className="text-slate-400 hover:text-blue-600 transition-all min-w-[160px] flex justify-center"
               onClick={async () => {
                 if (onRefresh) {
                   setIsRefreshing(true);
                   await onRefresh();
-                  setTimeout(() => setIsRefreshing(false), 1000);
+                  setTimeout(() => setIsRefreshing(false), 2000);
                 }
               }}
               disabled={isRefreshing}
             >
-              <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
-              Sincronizar Planilha
+              <ButtonLoading 
+                loading={isRefreshing} 
+                success={false} 
+                loadingText="Sincronizando..."
+              >
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Sincronizar Planilha
+                </>
+              </ButtonLoading>
             </Button>
             <Button 
               variant="ghost" 
@@ -411,15 +429,40 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
             <ScrollArea className="h-[250px] pr-4">
               {inspectedLocalities.length > 0 ? (
                 <div className="space-y-2">
-                  {inspectedLocalities.map((item) => (
-                    <div key={item.locality} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 border border-slate-100">
-                      <div className="w-2 h-2 rounded-full bg-green-500" />
-                      <div className="flex flex-col overflow-hidden">
-                        <span className="text-sm font-medium text-slate-700 truncate">{item.locality}</span>
-                        <span className="text-[10px] text-slate-400 font-bold uppercase">{item.city}</span>
+                  {inspectedLocalities.map((item) => {
+                    const isSelected = item.locality === localityFilter;
+                    return (
+                      <div 
+                        key={item.locality} 
+                        ref={isSelected ? highlightedRef : null}
+                        className={cn(
+                          "flex items-center gap-3 p-3 rounded-lg border transition-all duration-300",
+                          isSelected 
+                            ? "bg-blue-50 border-blue-200 shadow-sm ring-1 ring-blue-100" 
+                            : "bg-slate-50 border-slate-100"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-2 h-2 rounded-full",
+                          isSelected ? "bg-blue-600 animate-pulse" : "bg-green-500"
+                        )} />
+                        <div className="flex flex-col overflow-hidden">
+                          <span className={cn(
+                            "text-sm font-medium truncate",
+                            isSelected ? "text-blue-900" : "text-slate-700"
+                          )}>
+                            {item.locality}
+                          </span>
+                          <span className={cn(
+                            "text-[10px] font-bold uppercase",
+                            isSelected ? "text-blue-400" : "text-slate-400"
+                          )}>
+                            {item.city}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center py-8">
@@ -443,25 +486,53 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
             <ScrollArea className="h-[300px] pr-4">
               {pendingLocalities.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {pendingLocalities.map((item) => (
-                    <div key={`${item.locality}-${item.city}`} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 border border-slate-100">
-                      <div className="w-2 h-2 rounded-full bg-slate-300" />
-                      <div className="flex flex-col overflow-hidden">
-                        <span className="text-sm font-medium text-slate-700 truncate">{item.locality}</span>
-                        <span className="text-[10px] text-slate-400 font-bold uppercase">{item.city}</span>
+                  {pendingLocalities.map((item) => {
+                    const isSelected = item.locality === localityFilter;
+                    return (
+                      <div 
+                        key={`${item.locality}-${item.city}`} 
+                        ref={isSelected ? highlightedRef : null}
+                        className={cn(
+                          "flex items-center gap-3 p-3 rounded-lg border transition-all duration-300",
+                          isSelected 
+                            ? "bg-amber-50 border-amber-200 shadow-sm ring-1 ring-amber-100" 
+                            : "bg-slate-50 border-slate-100"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-2 h-2 rounded-full",
+                          isSelected ? "bg-amber-600 animate-pulse" : "bg-slate-300"
+                        )} />
+                        <div className="flex flex-col overflow-hidden">
+                          <span className={cn(
+                            "text-sm font-medium truncate",
+                            isSelected ? "text-amber-900" : "text-slate-700"
+                          )}>
+                            {item.locality}
+                          </span>
+                          <span className={cn(
+                            "text-[10px] font-bold uppercase",
+                            isSelected ? "text-amber-400" : "text-slate-400"
+                          )}>
+                            {item.city}
+                          </span>
+                        </div>
+                        {!isVisitor && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className={cn(
+                              "ml-auto p-0 h-8 w-8",
+                              isSelected ? "text-amber-700 hover:bg-amber-100" : "text-blue-600 hover:bg-blue-50"
+                            )}
+                            onClick={() => onNavigate('new-sampling', { city: item.city, locality: item.locality })}
+                          >
+                            <PlusCircle className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
-                      {!isVisitor && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="ml-auto text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-0 h-8 w-8"
-                          onClick={() => onNavigate('new-sampling', { city: item.city, locality: item.locality })}
-                        >
-                          <PlusCircle className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center py-12">

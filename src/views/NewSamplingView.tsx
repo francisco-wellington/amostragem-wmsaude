@@ -30,11 +30,13 @@ import {
 import { InventoryItem, InspectionSession } from '../types';
 import { generateSample, generateUUID } from '../lib/inventoryService';
 import { Textarea } from '@/components/ui/textarea';
+import { OverlayLoading } from '../components/LoadingUI';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface NewSamplingViewProps {
   inventory: InventoryItem[];
-  onStartSession: (session: InspectionSession) => void;
+  onStartSession: (session: InspectionSession) => Promise<void>;
   preSelectedCity?: string;
   preSelectedLocality?: string;
 }
@@ -49,6 +51,8 @@ export default function NewSamplingView({
   const [selectedLocality, setSelectedLocality] = useState<string>(preSelectedLocality);
   const [sampleMode, setSampleMode] = useState<'aleatoria' | 'completo' | 'manual'>('aleatoria');
   const [manualPatrimonies, setManualPatrimonies] = useState<string>('');
+  const [isStarting, setIsStarting] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
 
   const cities = useMemo(() => {
     const unique = new Set(inventory.map(item => item.Cidade).filter(Boolean));
@@ -76,10 +80,16 @@ export default function NewSamplingView({
   const totalItems = filteredItems.length;
   const sampleSize = Math.ceil(totalItems * 0.3);
 
-  const handleStart = () => {
-    if (!selectedLocality) return;
+  const handleStart = async () => {
+    if (!selectedLocality) {
+      setShowValidation(true);
+      toast.error('Por favor, selecione uma localidade.');
+      return;
+    }
 
-    let sample: InventoryItem[] = [];
+    setIsStarting(true);
+    try {
+      let sample: InventoryItem[] = [];
 
     if (sampleMode === 'manual') {
       const patrimonyList = manualPatrimonies
@@ -131,7 +141,13 @@ export default function NewSamplingView({
       completed: false
     };
 
-    onStartSession(session);
+    await onStartSession(session);
+    } catch (error) {
+      console.error('Erro ao iniciar sessão:', error);
+      toast.error('Erro ao preparar amostragem.');
+    } finally {
+      setIsStarting(false);
+    }
   };
 
   return (
@@ -150,15 +166,29 @@ export default function NewSamplingView({
         <CardContent className="space-y-8">
           {/* City Selection */}
           <div className="space-y-3">
-            <Label htmlFor="city" className="text-sm font-semibold text-slate-700">Cidade</Label>
+            <div className="flex justify-between items-center">
+              <Label htmlFor="city" className="text-sm font-semibold text-slate-700">
+                Cidade <span className="text-red-500">*</span>
+              </Label>
+              {showValidation && !selectedCity && (
+                <span className="text-[10px] font-bold text-red-500 uppercase">Obrigatório</span>
+              )}
+            </div>
             <Select 
               value={selectedCity} 
               onValueChange={(val) => {
                 setSelectedCity(val);
                 setSelectedLocality(''); // Reset locality when city changes
+                if (val) setShowValidation(false);
               }}
             >
-              <SelectTrigger id="city" className="h-12 text-lg">
+              <SelectTrigger 
+                id="city" 
+                className={cn(
+                  "h-12 text-lg transition-all",
+                  showValidation && !selectedCity ? "border-red-300 bg-red-50" : ""
+                )}
+              >
                 <SelectValue placeholder="Selecione uma cidade..." />
               </SelectTrigger>
               <SelectContent>
@@ -171,13 +201,29 @@ export default function NewSamplingView({
 
           {/* Locality Selection */}
           <div className="space-y-3">
-            <Label htmlFor="locality" className="text-sm font-semibold text-slate-700">Localidade</Label>
+            <div className="flex justify-between items-center">
+              <Label htmlFor="locality" className="text-sm font-semibold text-slate-700">
+                Localidade <span className="text-red-500">*</span>
+              </Label>
+              {showValidation && !selectedLocality && (
+                <span className="text-[10px] font-bold text-red-500 uppercase">Obrigatório</span>
+              )}
+            </div>
             <Select 
               value={selectedLocality} 
-              onValueChange={setSelectedLocality}
+              onValueChange={(val) => {
+                setSelectedLocality(val);
+                if (val) setShowValidation(false);
+              }}
               disabled={!selectedCity}
             >
-              <SelectTrigger id="locality" className="h-12 text-lg">
+              <SelectTrigger 
+                id="locality" 
+                className={cn(
+                  "h-12 text-lg transition-all",
+                  showValidation && !selectedLocality ? "border-red-300 bg-red-50" : ""
+                )}
+              >
                 <SelectValue placeholder={selectedCity ? "Selecione uma localidade..." : "Selecione primeiro a cidade"} />
               </SelectTrigger>
               <SelectContent>
@@ -290,8 +336,12 @@ export default function NewSamplingView({
         <CardFooter className="bg-slate-50 p-6 flex justify-end">
           <Button 
             size="lg" 
-            className="px-8 h-12 text-lg font-semibold bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200"
-            disabled={!selectedLocality}
+            className={cn(
+              "px-8 h-12 text-lg font-semibold shadow-lg transition-all",
+              !selectedLocality 
+                ? "bg-slate-200 text-slate-500 cursor-not-allowed grayscale" 
+                : "bg-blue-600 hover:bg-blue-700 shadow-blue-200"
+            )}
             onClick={handleStart}
           >
             Gerar Amostra e Iniciar
@@ -306,6 +356,8 @@ export default function NewSamplingView({
           <strong>Dica:</strong> A inspeção completa é recomendada para auditorias de encerramento de ciclo ou inventários anuais.
         </p>
       </div>
+
+      <OverlayLoading show={isStarting} message="Gerando amostragem e preparando checklist..." />
     </div>
   );
 }

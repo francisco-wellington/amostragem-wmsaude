@@ -24,9 +24,12 @@ import {
   Clock, 
   Search,
   ExternalLink,
-  Camera
+  Camera,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { CorrectiveAction, InventoryItem } from '../types';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Dialog,
   DialogContent,
@@ -36,11 +39,14 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { OverlayLoading } from '../components/LoadingUI';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface CorrectiveActionsViewProps {
   actions: CorrectiveAction[];
   inventory: InventoryItem[];
-  onUpdateAction: (action: CorrectiveAction) => void;
+  onUpdateAction: (action: CorrectiveAction) => Promise<void>;
   isVisitor?: boolean;
 }
 
@@ -48,7 +54,10 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAction, setSelectedAction] = useState<CorrectiveAction | null>(null);
   const [actionText, setActionText] = useState('');
-
+  const [isResolving, setIsResolving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+  
   const filteredActions = actions.filter(action => {
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -58,14 +67,34 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
     );
   }).sort((a, b) => (a.resolved === b.resolved ? 0 : a.resolved ? 1 : -1));
 
-  const handleResolve = (action: CorrectiveAction) => {
-    onUpdateAction({
-      ...action,
-      resolved: true,
-      resolutionDate: new Date().toISOString()
-    });
-    setSelectedAction(null);
-    setActionText('');
+  const totalPages = Math.ceil(filteredActions.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedActions = filteredActions.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset page when filtering
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const handleAction = async (resolved: boolean) => {
+    if (!selectedAction) return;
+    setIsResolving(true);
+    try {
+      await onUpdateAction({
+        ...selectedAction,
+        notes: actionText,
+        resolved: resolved,
+        resolutionDate: resolved ? (selectedAction.resolutionDate || new Date().toISOString()) : selectedAction.resolutionDate
+      });
+      toast.success(resolved ? 'Ação marcada como resolvida!' : 'Observação atualizada!');
+      setSelectedAction(null);
+      setActionText('');
+    } catch (error) {
+      console.error('Erro ao atualizar ação:', error);
+      toast.error('Erro ao salvar as alterações.');
+    } finally {
+      setIsResolving(false);
+    }
   };
 
   return (
@@ -102,8 +131,8 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredActions.length > 0 ? (
-              filteredActions.map((action) => {
+            {paginatedActions.length > 0 ? (
+              paginatedActions.map((action) => {
                 return (
                   <TableRow key={action.id} className="group">
                     <TableCell className="font-mono font-bold">{action.patrimony}</TableCell>
@@ -141,6 +170,7 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
                               size="sm"
                               onClick={() => {
                                 setSelectedAction(action);
+                                setActionText(action.notes || '');
                               }}
                             >
                               {action.resolved || isVisitor ? 'Ver Detalhes' : 'Resolver'}
@@ -155,16 +185,24 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
                           </DialogHeader>
                           <div className="space-y-4 py-4">
                             <div className="grid grid-cols-1 gap-4 text-sm">
-                              <div className="flex flex-col gap-1">
+                              <div className="flex flex-col gap-1 p-3 bg-slate-50 rounded-lg border border-slate-100">
                                 <span className="text-slate-500 font-bold uppercase text-[10px]">Localidade</span>
-                                <span>{action.locality}</span>
+                                <span className="font-medium">{action.locality}</span>
                               </div>
-                              {action.notes && (
-                                <div className="flex flex-col gap-1 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                                  <span className="text-blue-500 font-bold uppercase text-[10px]">Observação da Inspeção</span>
-                                  <span className="text-blue-800 italic">"{action.notes}"</span>
-                                </div>
-                              )}
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="observation" className="text-xs font-bold uppercase text-slate-500">
+                                Observações / Ações Tomadas
+                              </Label>
+                              <Textarea
+                                id="observation"
+                                placeholder="Descreva as observações ou o que foi feito para corrigir este item..."
+                                className="min-h-[120px] text-sm"
+                                value={actionText}
+                                onChange={(e) => setActionText(e.target.value)}
+                                disabled={isVisitor}
+                              />
                             </div>
 
                             {action.resolved && action.resolutionDate && (
@@ -174,16 +212,26 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
                               </div>
                             )}
                           </div>
-                          <DialogFooter>
-                            {!action.resolved && !isVisitor && (
+                          {!isVisitor && (
+                            <DialogFooter className="flex-col sm:flex-row gap-2">
                               <Button 
-                                className="w-full bg-blue-600 hover:bg-blue-700"
-                                onClick={() => handleResolve(action)}
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => handleAction(false)}
                               >
-                                Marcar como Resolvido
+                                Salvar Observação
                               </Button>
-                            )}
-                          </DialogFooter>
+                              {!action.resolved && (
+                                <Button 
+                                  className="flex-1 bg-green-600 hover:bg-green-700"
+                                  onClick={() => handleAction(true)}
+                                >
+                                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                                  Resolver Agora
+                                </Button>
+                              )}
+                            </DialogFooter>
+                          )}
                         </DialogContent>
                       </Dialog>
                     </TableCell>
@@ -202,7 +250,39 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
             )}
           </TableBody>
         </Table>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between p-4 bg-slate-50 border-t border-slate-100">
+            <div className="text-xs text-slate-500">
+              Mostrando {startIndex + 1} até {Math.min(startIndex + itemsPerPage, filteredActions.length)} de {filteredActions.length} registros
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <div className="text-xs font-bold text-slate-700 min-w-[3rem] text-center">
+                Pág. {currentPage} de {totalPages}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
+      <OverlayLoading show={isResolving} message="Registrando resolução da ação..." />
     </div>
   );
 }

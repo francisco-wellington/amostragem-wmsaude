@@ -13,6 +13,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { OfflineBadge } from './ConnectivityIndicator';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -143,8 +144,9 @@ export default function Layout({ children, activeTab, setActiveTab, user, onLogo
           <h1 className="text-xl font-semibold text-slate-800">
             {menuItems.find(m => m.id === activeTab)?.label}
           </h1>
-          <div className="flex items-center gap-4">
-             <div className="text-sm text-slate-500">
+          <div className="flex items-center gap-6">
+             <OfflineBadge />
+             <div className="hidden md:block text-sm text-slate-500">
                {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
              </div>
           </div>
