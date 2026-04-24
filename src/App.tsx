@@ -42,6 +42,7 @@ import ChecklistView from './views/ChecklistView';
 import CorrectiveActionsView from './views/CorrectiveActionsView';
 import HistoryView from './views/HistoryView';
 import { ThemeProvider } from './components/ThemeProvider';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 export default function App() {
   const [user, setUser] = useState<(User & { isVisitor?: boolean }) | null>(null);
@@ -163,6 +164,7 @@ export default function App() {
             patrimony: item.Patrimônio,
             description: `Não conformidade em ${item.Localidade}: ${item.Descrição}`,
             locality: item.Localidade,
+            city: item.Cidade || completedSession.city,
             date: new Date().toISOString(),
             resolved: false,
             notes: result.notes,
@@ -280,52 +282,54 @@ export default function App() {
 
   return (
     <ThemeProvider defaultTheme="light" storageKey="wm-saude-theme">
-      <ConnectivityIndicator />
-      <Layout activeTab={activeTab} setActiveTab={handleNavigate} user={user} onLogout={handleLogout}>
-        {activeTab === 'dashboard' && (
-          <DashboardView 
-            sessions={sessions} 
-            inventory={inventory} 
-            actions={actions}
-            onNavigate={handleNavigate}
-            onRefresh={handleRefresh}
-            isVisitor={user?.isVisitor}
-          />
-        )}
-        {activeTab === 'new-sampling' && (
-          <NewSamplingView 
-            inventory={inventory} 
-            onStartSession={handleStartSession} 
-            preSelectedCity={navParams?.city}
-            preSelectedLocality={navParams?.locality}
-          />
-        )}
-        {activeTab === 'checklist' && (
-          <ChecklistView 
-            session={activeSession} 
-            onUpdateSession={handleUpdateSession}
-            onCompleteSession={handleCompleteSession}
-            onCancelSession={handleCancelSession}
-            onExitSession={handleExitSession}
-          />
-        )}
-        {activeTab === 'corrective-actions' && (
-          <CorrectiveActionsView 
-            actions={actions} 
-            inventory={inventory}
-            onUpdateAction={handleUpdateAction}
-            isVisitor={user?.isVisitor}
-          />
-        )}
-        {activeTab === 'history' && (
-          <HistoryView 
-            sessions={sessions} 
-            onEditSession={handleEditSession}
-            isVisitor={user?.isVisitor}
-          />
-        )}
-      </Layout>
-      <Toaster position="top-right" richColors />
+      <TooltipProvider>
+        <ConnectivityIndicator />
+        <Layout activeTab={activeTab} setActiveTab={handleNavigate} user={user} onLogout={handleLogout}>
+          {activeTab === 'dashboard' && (
+            <DashboardView 
+              sessions={sessions} 
+              inventory={inventory} 
+              actions={actions}
+              onNavigate={handleNavigate}
+              onRefresh={handleRefresh}
+              isVisitor={user?.isVisitor}
+            />
+          )}
+          {activeTab === 'new-sampling' && (
+            <NewSamplingView 
+              inventory={inventory} 
+              onStartSession={handleStartSession} 
+              preSelectedCity={navParams?.city}
+              preSelectedLocality={navParams?.locality}
+            />
+          )}
+          {activeTab === 'checklist' && (
+            <ChecklistView 
+              session={activeSession} 
+              onUpdateSession={handleUpdateSession}
+              onCompleteSession={handleCompleteSession}
+              onCancelSession={handleCancelSession}
+              onExitSession={handleExitSession}
+            />
+          )}
+          {activeTab === 'corrective-actions' && (
+            <CorrectiveActionsView 
+              actions={actions} 
+              inventory={inventory}
+              onUpdateAction={handleUpdateAction}
+              isVisitor={user?.isVisitor}
+            />
+          )}
+          {activeTab === 'history' && (
+            <HistoryView 
+              sessions={sessions} 
+              onEditSession={handleEditSession}
+              isVisitor={user?.isVisitor}
+            />
+          )}
+        </Layout>
+        <Toaster position="top-right" richColors />
+      </TooltipProvider>
     </ThemeProvider>
   );
 }

@@ -39,6 +39,7 @@ export interface CorrectiveAction {
   patrimony: string;
   description: string;
   locality: string;
+  city?: string;
   date: string;
   resolved: boolean;
   resolutionDate?: string;

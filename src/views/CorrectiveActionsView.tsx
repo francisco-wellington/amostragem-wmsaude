@@ -19,6 +19,13 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue 
+} from '@/components/ui/select';
+import { 
   AlertCircle, 
   CheckCircle2, 
   Clock, 
@@ -26,7 +33,11 @@ import {
   ExternalLink,
   Camera,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Building2,
+  MapPin,
+  CalendarDays,
+  Filter
 } from 'lucide-react';
 import { CorrectiveAction, InventoryItem } from '../types';
 import { Textarea } from '@/components/ui/textarea';
@@ -39,6 +50,11 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
 import { OverlayLoading } from '../components/LoadingUI';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -56,15 +72,51 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
   const [actionText, setActionText] = useState('');
   const [isResolving, setIsResolving] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  
+  const [selectedCity, setSelectedCity] = useState<string>('all');
+  const [selectedLocality, setSelectedLocality] = useState<string>('all');
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [selectedYear, setSelectedYear] = useState<string>('all');
+
   const itemsPerPage = 8;
+
+  // Derivando valores únicos para os filtros
+  const cities = Array.from(new Set(actions.map(a => a.city).filter(Boolean))) as string[];
+  const localities = Array.from(new Set(actions.filter(a => selectedCity === 'all' || a.city === selectedCity).map(a => a.locality)));
+  
+  const years = Array.from(new Set(actions.map(a => new Date(a.date).getFullYear().toString()))).sort((a, b) => b.localeCompare(a));
+  const months = [
+    { value: '0', label: 'Janeiro' },
+    { value: '1', label: 'Fevereiro' },
+    { value: '2', label: 'Março' },
+    { value: '3', label: 'Abril' },
+    { value: '4', label: 'Maio' },
+    { value: '5', label: 'Junho' },
+    { value: '6', label: 'Julho' },
+    { value: '7', label: 'Agosto' },
+    { value: '8', label: 'Setembro' },
+    { value: '9', label: 'Outubro' },
+    { value: '10', label: 'Novembro' },
+    { value: '11', label: 'Dezembro' },
+  ];
   
   const filteredActions = actions.filter(action => {
     const searchLower = searchTerm.toLowerCase();
-    return (
+    const actionDate = new Date(action.date);
+    
+    const matchesSearch = (
       action.patrimony.toLowerCase().includes(searchLower) ||
       action.description.toLowerCase().includes(searchLower) ||
-      action.locality.toLowerCase().includes(searchLower)
+      action.locality.toLowerCase().includes(searchLower) ||
+      (action.city && action.city.toLowerCase().includes(searchLower))
     );
+
+    const matchesCity = selectedCity === 'all' || action.city === selectedCity;
+    const matchesLocality = selectedLocality === 'all' || action.locality === selectedLocality;
+    const matchesMonth = selectedMonth === 'all' || actionDate.getMonth().toString() === selectedMonth;
+    const matchesYear = selectedYear === 'all' || actionDate.getFullYear().toString() === selectedYear;
+
+    return matchesSearch && matchesCity && matchesLocality && matchesMonth && matchesYear;
   }).sort((a, b) => (a.resolved === b.resolved ? 0 : a.resolved ? 1 : -1));
 
   const totalPages = Math.ceil(filteredActions.length / itemsPerPage);
@@ -74,7 +126,7 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
   // Reset page when filtering
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, selectedCity, selectedLocality, selectedMonth, selectedYear]);
 
   const handleAction = async (resolved: boolean) => {
     if (!selectedAction) return;
@@ -99,23 +151,159 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
 
   return (
     <div className="space-y-6 text-slate-900 dark:text-slate-100">
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
-          <Input 
-            placeholder="Buscar por patrimônio, descrição ou localidade..." 
-            className="pl-10 dark:bg-slate-900 dark:border-slate-800 dark:text-white"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="flex gap-2">
-          <Badge variant="outline" className="bg-white dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400">
-            {actions.filter(a => !a.resolved).length} Pendentes
-          </Badge>
-          <Badge variant="outline" className="bg-white dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400">
-            {actions.filter(a => a.resolved).length} Resolvidas
-          </Badge>
+      <div className="flex flex-col gap-4">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600 dark:text-blue-400">
+              <Filter className="w-4 h-4" />
+            </div>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-tight">Filtros de Ações</h2>
+          </div>
+
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                <Search className="w-3.5 h-3.5" />
+                <label className="text-[10px] font-bold uppercase tracking-wider">Buscar Patrimônio</label>
+              </div>
+              <div className="relative group">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                <Input 
+                  placeholder="Patrimônio, descrição ou localidade..." 
+                  className="pl-10 h-11 dark:bg-slate-950 dark:border-slate-800 dark:text-white focus-visible:ring-1 focus-visible:ring-blue-500"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 lg:flex lg:items-end gap-3 flex-wrap">
+              <div className="space-y-2 lg:w-[180px]">
+                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                  <Building2 className="w-3.5 h-3.5" />
+                  <label className="text-[10px] font-bold uppercase tracking-wider">Cidade</label>
+                </div>
+                <Select value={selectedCity} onValueChange={(val) => { setSelectedCity(val); setSelectedLocality('all'); }}>
+                  <SelectTrigger className="h-11 w-full dark:bg-slate-950 dark:border-slate-800 focus:ring-1 focus:ring-blue-500">
+                    <SelectValue placeholder="Cidade">
+                      {selectedCity === 'all' ? 'Todas' : selectedCity}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="dark:bg-slate-950 dark:border-slate-800">
+                    <SelectItem value="all">Todas as cidades</SelectItem>
+                    {cities.map(city => (
+                      <SelectItem key={city} value={city}>{city}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 lg:w-[180px]">
+                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                  <MapPin className="w-3.5 h-3.5" />
+                  <label className="text-[10px] font-bold uppercase tracking-wider">Localidade</label>
+                </div>
+                <Select value={selectedLocality} onValueChange={setSelectedLocality}>
+                  <SelectTrigger className="h-11 w-full dark:bg-slate-950 dark:border-slate-800 focus:ring-1 focus:ring-blue-500">
+                    <SelectValue placeholder="Localidade">
+                      {selectedLocality === 'all' ? 'Todas' : selectedLocality}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="dark:bg-slate-950 dark:border-slate-800">
+                    <SelectItem value="all">Todas as localidades</SelectItem>
+                    {localities.map(loc => (
+                      <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 lg:w-[150px]">
+                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                  <CalendarDays className="w-3.5 h-3.5" />
+                  <label className="text-[10px] font-bold uppercase tracking-wider">Mês</label>
+                </div>
+                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                  <SelectTrigger className="h-11 w-full dark:bg-slate-950 dark:border-slate-800 focus:ring-1 focus:ring-blue-500">
+                    <SelectValue placeholder="Mês">
+                      {selectedMonth === 'all' ? 'Todos' : months.find(m => m.value === selectedMonth)?.label}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="dark:bg-slate-950 dark:border-slate-800">
+                    <SelectItem value="all">Todos os meses</SelectItem>
+                    {months.map(m => (
+                      <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 lg:w-[110px]">
+                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                  <CalendarDays className="w-3.5 h-3.5" />
+                  <label className="text-[10px] font-bold uppercase tracking-wider">Ano</label>
+                </div>
+                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <SelectTrigger className="h-11 w-full dark:bg-slate-950 dark:border-slate-800 focus:ring-1 focus:ring-blue-500">
+                    <SelectValue placeholder="Ano">
+                      {selectedYear === 'all' ? 'Todos' : selectedYear}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="dark:bg-slate-950 dark:border-slate-800">
+                    <SelectItem value="all">Todos os anos</SelectItem>
+                    {years.map(y => (
+                      <SelectItem key={y} value={y}>{y}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap gap-2 items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2">
+              {(selectedCity !== 'all' || selectedLocality !== 'all' || selectedMonth !== 'all' || selectedYear !== 'all' || searchTerm) && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => {
+                    setSelectedCity('all');
+                    setSelectedLocality('all');
+                    setSelectedMonth('all');
+                    setSelectedYear('all');
+                    setSearchTerm('');
+                  }}
+                  className="text-xs text-slate-500 hover:text-red-600 h-8"
+                >
+                  Limpar Filtros
+                </Button>
+              )}
+            </div>
+            
+            <div className="flex gap-2">
+              <Tooltip>
+                <TooltipTrigger render={<div />}>
+                  <Badge variant="outline" className="bg-white dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400">
+                    {actions.filter(a => !a.resolved).length} Pendentes
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent className="dark:bg-slate-800 dark:text-slate-200 border-none shadow-xl">
+                  <p>Total de itens aguardando resolução.</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger render={<div />}>
+                  <Badge variant="outline" className="bg-white dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400">
+                    {actions.filter(a => a.resolved).length} Resolvidas
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent className="dark:bg-slate-800 dark:text-slate-200 border-none shadow-xl">
+                  <p>Total de itens com inconformidades resolvidas.</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -140,24 +328,33 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium text-slate-900 dark:text-slate-100">{action.description}</span>
-                          <span className="text-xs text-slate-500 dark:text-slate-400">{action.locality}</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            {action.city ? `${action.city} - ` : ''}{action.locality}
+                          </span>
                           {action.notes && (
-                            <span className="text-xs text-blue-600 dark:text-blue-400 mt-1 italic">Obs: {action.notes}</span>
+                            <span className="text-xs text-red-600 dark:text-blue-400 mt-1 italic">Obs: {action.notes}</span>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        {action.resolved ? (
-                          <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 border-green-200 dark:border-green-800/50 border-none">
-                            <CheckCircle2 className="w-3 h-3 mr-1" />
-                            Resolvido
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/40 border-orange-200 dark:border-orange-800/50 border-none">
-                            <Clock className="w-3 h-3 mr-1" />
-                            Pendente
-                          </Badge>
-                        )}
+                        <Tooltip>
+                          <TooltipTrigger render={<div />}>
+                            {action.resolved ? (
+                              <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 border-green-200 dark:border-green-800/50 border-none">
+                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                                Resolvido
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/40 border-orange-200 dark:border-orange-800/50 border-none">
+                                <Clock className="w-3 h-3 mr-1" />
+                                Pendente
+                              </Badge>
+                            )}
+                          </TooltipTrigger>
+                          <TooltipContent className="dark:bg-slate-800 dark:text-slate-200 border-none shadow-xl">
+                            <p>{action.resolved ? 'A inconformidade deste item já foi tratada e resolvida.' : 'Item aguardando análise ou ação técnica para correção.'}</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </TableCell>
                       <TableCell className="text-xs text-slate-500 dark:text-slate-500">
                         {new Date(action.date).toLocaleDateString('pt-BR')}
@@ -189,7 +386,9 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
                               <div className="grid grid-cols-1 gap-4 text-sm">
                                 <div className="flex flex-col gap-1 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-800">
                                   <span className="text-slate-500 dark:text-slate-500 font-bold uppercase text-[10px]">Localidade</span>
-                                  <span className="font-medium dark:text-slate-200">{action.locality}</span>
+                                  <span className="font-medium dark:text-slate-200">
+                                    {action.city ? `${action.city} - ` : ''}{action.locality}
+                                  </span>
                                 </div>
                               </div>
 
