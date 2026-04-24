@@ -31,15 +31,25 @@ import {
   TrendingUp,
   ArrowRight,
   MapPin,
+  MapPinOff,
   Building2,
   CalendarDays,
   FilterX,
   PlusCircle,
-  RefreshCw
+  RefreshCw,
+  Eye,
+  Info
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { ButtonLoading } from '../components/LoadingUI';
 import { InspectionSession, InventoryItem, CorrectiveAction, InspectionResult } from '../types';
@@ -55,6 +65,7 @@ interface DashboardViewProps {
 
 export default function DashboardView({ sessions, inventory, actions, onNavigate, onRefresh, isVisitor }: DashboardViewProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedSessionDetails, setSelectedSessionDetails] = useState<InspectionSession | null>(null);
   const [localityFilter, setLocalityFilter] = useState<string>('Todas');
   const [cityFilter, setCityFilter] = useState<string>('Todas');
   const [yearFilter, setYearFilter] = useState<string>(new Date().getFullYear().toString());
@@ -68,24 +79,52 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
     }
   }, [localityFilter]);
 
-  // Get all unique cities for the filter
-  const cities = useMemo(() => {
-    const unique = new Set(inventory.map(item => item.Cidade).filter(Boolean));
-    return Array.from(unique).sort();
+  // Optimization: Pre-calculate locality-to-city and city-to-localities lookups
+  const localityLookup = useMemo(() => {
+    const localityToCity = new Map<string, string>();
+    const cityToLocalities = new Map<string, Set<string>>();
+    const uniqueCities = new Set<string>();
+
+    inventory.forEach(item => {
+      if (item.Cidade) {
+        uniqueCities.add(item.Cidade);
+        if (item.Localidade) {
+          localityToCity.set(item.Localidade, item.Cidade);
+          
+          if (!cityToLocalities.has(item.Cidade)) {
+            cityToLocalities.set(item.Cidade, new Set());
+          }
+          cityToLocalities.get(item.Cidade)!.add(item.Localidade);
+        }
+      }
+    });
+
+    return { 
+      localityToCity, 
+      cityToLocalities, 
+      cities: Array.from(uniqueCities).sort() 
+    };
   }, [inventory]);
+
+  const cities = localityLookup.cities;
 
   // Get all unique localities for the filter, potentially filtered by city
   const localities = useMemo(() => {
-    const source = cityFilter === 'Todas' 
-      ? inventory 
-      : inventory.filter(item => item.Cidade === cityFilter);
-    const unique = new Set(source.map(item => item.Localidade).filter(Boolean));
-    return Array.from(unique).sort();
-  }, [inventory, cityFilter]);
+    if (cityFilter === 'Todas') {
+      const all = Array.from(localityLookup.localityToCity.keys());
+      return all.sort();
+    }
+    const filtered = localityLookup.cityToLocalities.get(cityFilter);
+    return filtered ? Array.from(filtered).sort() : [];
+  }, [localityLookup, cityFilter]);
 
   // Get available years from sessions
   const years = useMemo(() => {
-    const uniqueYears = new Set(sessions.map(s => new Date(s.date).getFullYear().toString()));
+    const uniqueYears = new Set<string>();
+    sessions.forEach(s => {
+      const year = new Date(s.date).getFullYear().toString();
+      uniqueYears.add(year);
+    });
     // Always include current year
     uniqueYears.add(new Date().getFullYear().toString());
     return Array.from(uniqueYears).sort((a, b) => b.localeCompare(a));
@@ -97,105 +136,132 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
       const sessionDate = new Date(s.date);
       const sessionYear = sessionDate.getFullYear().toString();
       
-      const matchesYear = yearFilter === 'Todas' || sessionYear === yearFilter;
-      const matchesLocality = localityFilter === 'Todas' || s.locality === localityFilter;
+      if (yearFilter !== 'Todas' && sessionYear !== yearFilter) return false;
+      if (localityFilter !== 'Todas' && s.locality !== localityFilter) return false;
       
-      // For city matching in sessions, we use the stored city or fallback to inventory lookup
-      let matchesCity = true;
       if (cityFilter !== 'Todas') {
-        if (s.city) {
-          matchesCity = s.city === cityFilter;
-        } else {
-          // Fallback for older sessions: check if ANY item in this session's items belongs to the filtered city
-          // or if the locality exists in that city in the inventory
-          const itemInCity = s.items.some(item => item.Cidade === cityFilter) || 
-                            inventory.some(item => item.Localidade === s.locality && item.Cidade === cityFilter);
-          matchesCity = itemInCity;
-        }
+        const sessionCity = s.city || localityLookup.localityToCity.get(s.locality);
+        if (sessionCity !== cityFilter) return false;
       }
       
-      return matchesYear && matchesLocality && matchesCity;
+      return true;
     });
-  }, [sessions, localityFilter, cityFilter, yearFilter, inventory]);
+  }, [sessions, localityFilter, cityFilter, yearFilter, localityLookup]);
 
   // Filter inventory based on locality and city
   const filteredInventory = useMemo(() => {
+    if (cityFilter === 'Todas' && localityFilter === 'Todas') return inventory;
+    
     return inventory.filter(item => {
-      const matchesCity = cityFilter === 'Todas' || item.Cidade === cityFilter;
-      const matchesLocality = localityFilter === 'Todas' || item.Localidade === localityFilter;
-      return matchesCity && matchesLocality;
+      if (cityFilter !== 'Todas' && item.Cidade !== cityFilter) return false;
+      if (localityFilter !== 'Todas' && item.Localidade !== localityFilter) return false;
+      return true;
     });
   }, [inventory, cityFilter, localityFilter]);
 
   // Filter actions based on locality and city
   const filteredActions = useMemo(() => {
     return actions.filter(a => {
-      const matchesCity = cityFilter === 'Todas' || a.locality.includes(cityFilter); // Fallback check
-      const matchesLocality = localityFilter === 'Todas' || a.locality === localityFilter;
+      if (localityFilter !== 'Todas' && a.locality !== localityFilter) return false;
       
-      // Better city check for actions if locality is unique
-      let cityMatch = matchesCity;
       if (cityFilter !== 'Todas') {
-        const item = inventory.find(i => i.Localidade === a.locality);
-        if (item) cityMatch = item.Cidade === cityFilter;
+        const city = localityLookup.localityToCity.get(a.locality);
+        if (city && city !== cityFilter) return false;
+        if (!city && !a.locality.includes(cityFilter)) return false; // Fallback
       }
 
-      return cityMatch && matchesLocality;
+      return true;
     });
-  }, [actions, cityFilter, localityFilter, inventory]);
+  }, [actions, cityFilter, localityFilter, localityLookup]);
 
   const totalItems = filteredInventory.length;
   const totalInspections = filteredSessions.length;
   const completedInspections = filteredSessions.filter(s => s.completed).length;
   const pendingActions = filteredActions.filter(a => !a.resolved).length;
 
-  // Calculate total unique localities in filtered inventory
+  // Calculate total unique localities in filtered inventory - Optimized
   const totalLocalities = useMemo(() => {
-    return new Set(filteredInventory.map(item => `${item.Cidade}|${item.Localidade}`).filter(Boolean)).size;
-  }, [filteredInventory]);
+    if (cityFilter === 'Todas' && localityFilter === 'Todas') {
+      return localityLookup.localityToCity.size;
+    }
+    
+    const unique = new Set<string>();
+    filteredInventory.forEach(item => {
+      if (item.Localidade && item.Cidade) {
+        unique.add(`${item.Localidade}|${item.Cidade}`);
+      }
+    });
+    return unique.size;
+  }, [filteredInventory, cityFilter, localityFilter, localityLookup]);
 
   // Get list of unique localities already inspected (filtered)
   const inspectedLocalities = useMemo(() => {
-    const uniqueMap = new Map<string, { locality: string; city: string }>();
+    const uniqueMap = new Map<string, { locality: string; city: string; lastSession: InspectionSession }>();
     
-    filteredSessions.filter(s => s.completed).forEach(s => {
-      const city = s.city || inventory.find(i => i.Localidade === s.locality)?.Cidade || 'unknown';
+    // Sort sessions by date descending to get the latest one first
+    const sortedDesc = [...filteredSessions]
+      .filter(s => s.completed)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    sortedDesc.forEach(s => {
+      const city = s.city || localityLookup.localityToCity.get(s.locality) || 'unknown';
       const key = `${s.locality}|${city}`;
       if (!uniqueMap.has(key)) {
-        uniqueMap.set(key, { locality: s.locality, city });
+        uniqueMap.set(key, { locality: s.locality, city, lastSession: s });
       }
     });
 
     return Array.from(uniqueMap.values()).sort((a, b) => a.locality.localeCompare(b.locality));
-  }, [filteredSessions, inventory]);
+  }, [filteredSessions, localityLookup]);
 
-  // Calculate localities not yet inspected
+  // Calculate localities not yet inspected - Highly Optimized
   const pendingLocalities = useMemo(() => {
-    const allLocalitiesMap = new Map<string, { locality: string; city: string }>();
-    filteredInventory.forEach(item => {
-      const key = `${item.Localidade}|${item.Cidade}`;
-      if (!allLocalitiesMap.has(key)) {
-        allLocalitiesMap.set(key, { locality: item.Localidade, city: item.Cidade });
-      }
-    });
-
     const inspectedKeys = new Set(inspectedLocalities.map(item => `${item.locality}|${item.city}`));
+    const pending: { locality: string; city: string }[] = [];
+    const seenLocalities = new Set<string>();
 
-    const pending = Array.from(allLocalitiesMap.values()).filter(item => {
-      const key = `${item.locality}|${item.city}`;
-      return !inspectedKeys.has(key);
+    filteredInventory.forEach(item => {
+      if (!item.Localidade || !item.Cidade) return;
+      const key = `${item.Localidade}|${item.Cidade}`;
+      
+      if (!seenLocalities.has(key)) {
+        seenLocalities.add(key);
+        if (!inspectedKeys.has(key)) {
+          pending.push({ locality: item.Localidade, city: item.Cidade });
+        }
+      }
     });
 
     return pending.sort((a, b) => a.locality.localeCompare(b.locality));
   }, [filteredInventory, inspectedLocalities]);
 
-  // Calculate overall conformity (filtered)
-  const allResults = filteredSessions.flatMap(s => Object.values(s.results) as InspectionResult[]);
-  const totalVerified = allResults.length;
-  const totalConforme = allResults.filter(r => r.status === 'conforme').length;
-  const conformityRate = totalVerified > 0 ? (totalConforme / totalVerified) * 100 : 0;
+  // Calculate overall conformity (filtered) - Optimized to single pass
+  const conformityStats = useMemo(() => {
+    let totalVerified = 0;
+    let totalConforme = 0;
+    
+    filteredSessions.forEach(s => {
+      const results = Object.values(s.results) as InspectionResult[];
+      results.forEach(r => {
+        totalVerified++;
+        if (r.status === 'conforme') totalConforme++;
+      });
+    });
+    
+    return {
+      totalVerified,
+      totalConforme,
+      rate: totalVerified > 0 ? (totalConforme / totalVerified) * 100 : 0
+    };
+  }, [filteredSessions]);
 
-  const lastSession = filteredSessions.filter(s => s.completed).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+  const conformityRate = conformityStats.rate;
+
+  const lastSession = useMemo(() => {
+    const completed = filteredSessions.filter(s => s.completed);
+    if (completed.length === 0) return null;
+    return completed.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+  }, [filteredSessions]);
   
   const chartData = filteredSessions.filter(s => s.completed).slice(-5).map(s => {
     const results = Object.values(s.results) as InspectionResult[];
@@ -208,7 +274,7 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
   });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-10">
       {/* Modern Filters */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
         <div className="flex items-center justify-between">
@@ -320,86 +386,100 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        <Card className="border-none shadow-sm bg-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+        <Card className="border-none shadow-sm bg-white overflow-hidden">
+          <CardContent className="pt-6 2xl:pt-10 2xl:pb-8 text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-slate-500">Total Patrimônio</p>
-                <h3 className="text-2xl font-bold text-slate-900">{totalItems}</h3>
+                <p className="text-sm 2xl:text-base font-medium text-slate-500">Total Patrimônio</p>
+                <h3 className="text-2xl 2xl:text-4xl font-bold text-slate-900">{totalItems}</h3>
               </div>
-              <div className="p-3 bg-blue-50 rounded-xl text-blue-600">
-                <Package className="w-6 h-6" />
+              <div className="p-3 2xl:p-5 bg-blue-50 rounded-2xl text-blue-600">
+                <Package className="w-6 h-6 2xl:w-8 2xl:h-8" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm bg-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
+        <Card className="border-none shadow-sm bg-white overflow-hidden">
+          <CardContent className="pt-6 2xl:pt-10 2xl:pb-8 text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-slate-500">Total Localidades</p>
-                <h3 className="text-2xl font-bold text-slate-900">{totalLocalities}</h3>
+                <p className="text-sm 2xl:text-base font-medium text-slate-500">Total Unidades</p>
+                <h3 className="text-2xl 2xl:text-4xl font-bold text-slate-900">{totalLocalities}</h3>
               </div>
-              <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600">
-                <MapPin className="w-6 h-6" />
+              <div className="p-3 2xl:p-5 bg-indigo-50 rounded-2xl text-indigo-600">
+                <Building2 className="w-6 h-6 2xl:w-8 2xl:h-8" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm bg-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
+        <Card className="border-none shadow-sm bg-white overflow-hidden ring-1 ring-amber-100">
+          <CardContent className="pt-6 2xl:pt-10 2xl:pb-8 text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-slate-500">Conformidade Geral</p>
-                <h3 className="text-2xl font-bold text-slate-900">{conformityRate.toFixed(1)}%</h3>
+                <p className="text-sm 2xl:text-base font-medium text-slate-500">Uni. Pendentes</p>
+                <h3 className="text-2xl 2xl:text-4xl font-bold text-amber-600">{pendingLocalities.length}</h3>
               </div>
-              <div className={`p-3 rounded-xl ${conformityRate >= 85 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                {conformityRate >= 85 ? <CheckCircle2 className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
+              <div className="p-3 2xl:p-5 bg-amber-50 rounded-2xl text-amber-600">
+                <MapPinOff className="w-6 h-6 2xl:w-8 2xl:h-8" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm bg-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
+        <Card className="border-none shadow-sm bg-white overflow-hidden">
+          <CardContent className="pt-6 2xl:pt-10 2xl:pb-8 text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-slate-500">Inspeções Realizadas</p>
-                <h3 className="text-2xl font-bold text-slate-900">{completedInspections}</h3>
+                <p className="text-sm 2xl:text-base font-medium text-slate-500">Conformidade</p>
+                <h3 className="text-2xl 2xl:text-4xl font-bold text-slate-900">{conformityRate.toFixed(1)}%</h3>
               </div>
-              <div className="p-3 bg-purple-50 rounded-xl text-purple-600">
-                <TrendingUp className="w-6 h-6" />
+              <div className={`p-3 2xl:p-5 rounded-2xl ${conformityRate >= 85 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                {conformityRate >= 85 ? <CheckCircle2 className="w-6 h-6 2xl:w-8 2xl:h-8" /> : <AlertTriangle className="w-6 h-6 2xl:w-8 2xl:h-8" />}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm bg-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
+        <Card className="border-none shadow-sm bg-white overflow-hidden">
+          <CardContent className="pt-6 2xl:pt-10 2xl:pb-8 text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-slate-500">Ações Pendentes</p>
-                <h3 className="text-2xl font-bold text-slate-900">{pendingActions}</h3>
+                <p className="text-sm 2xl:text-base font-medium text-slate-500">Inspeções</p>
+                <h3 className="text-2xl 2xl:text-4xl font-bold text-slate-900">{completedInspections}</h3>
               </div>
-              <div className="p-3 bg-orange-50 rounded-xl text-orange-600">
-                <XCircle className="w-6 h-6" />
+              <div className="p-3 2xl:p-5 bg-purple-50 rounded-2xl text-purple-600">
+                <TrendingUp className="w-6 h-6 2xl:w-8 2xl:h-8" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-sm bg-white overflow-hidden">
+          <CardContent className="pt-6 2xl:pt-10 2xl:pb-8 text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
+              <div>
+                <p className="text-sm 2xl:text-base font-medium text-slate-500">Ações Pendentes</p>
+                <h3 className="text-2xl 2xl:text-4xl font-bold text-slate-900">{pendingActions}</h3>
+              </div>
+              <div className="p-3 2xl:p-5 bg-orange-50 rounded-2xl text-orange-600">
+                <XCircle className="w-6 h-6 2xl:w-8 2xl:h-8" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 3xl:grid-cols-4 gap-8">
         {/* Chart */}
-        <Card className="lg:col-span-2 border-none shadow-sm bg-white">
+        <Card className="lg:col-span-2 3xl:col-span-3 border-none shadow-sm bg-white">
           <CardHeader>
             <CardTitle className="text-lg font-semibold">Conformidade por Localidade (Últimas 5)</CardTitle>
             <CardDescription>Percentual de itens conformes na amostra</CardDescription>
           </CardHeader>
-          <CardContent className="h-[300px]">
+          <CardContent className="h-[300px] 2xl:h-[500px] 3xl:h-[600px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -426,27 +506,32 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
             <CardDescription>Unidades que já passaram por auditoria</CardDescription>
           </CardHeader>
           <CardContent className="flex-1 overflow-hidden">
-            <ScrollArea className="h-[250px] pr-4">
+            <ScrollArea className="h-[250px] 2xl:h-[450px] 3xl:h-[550px] pr-4">
               {inspectedLocalities.length > 0 ? (
                 <div className="space-y-2">
                   {inspectedLocalities.map((item) => {
                     const isSelected = item.locality === localityFilter;
+                    const results = Object.values(item.lastSession.results) as InspectionResult[];
+                    const conforme = results.filter(r => r.status === 'conforme').length;
+                    const rate = results.length > 0 ? (conforme / results.length) * 100 : 0;
+
                     return (
                       <div 
                         key={item.locality} 
                         ref={isSelected ? highlightedRef : null}
                         className={cn(
-                          "flex items-center gap-3 p-3 rounded-lg border transition-all duration-300",
+                          "group flex items-center gap-3 p-3 rounded-lg border transition-all duration-300 cursor-pointer",
                           isSelected 
                             ? "bg-blue-50 border-blue-200 shadow-sm ring-1 ring-blue-100" 
-                            : "bg-slate-50 border-slate-100"
+                            : "bg-slate-50 border-slate-100 hover:border-blue-200 hover:bg-white"
                         )}
+                        onClick={() => setSelectedSessionDetails(item.lastSession)}
                       >
                         <div className={cn(
                           "w-2 h-2 rounded-full",
                           isSelected ? "bg-blue-600 animate-pulse" : "bg-green-500"
                         )} />
-                        <div className="flex flex-col overflow-hidden">
+                        <div className="flex flex-col overflow-hidden flex-1">
                           <span className={cn(
                             "text-sm font-medium truncate",
                             isSelected ? "text-blue-900" : "text-slate-700"
@@ -457,9 +542,10 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
                             "text-[10px] font-bold uppercase",
                             isSelected ? "text-blue-400" : "text-slate-400"
                           )}>
-                            {item.city}
+                            {item.city} • {rate.toFixed(0)}% Conformidade
                           </span>
                         </div>
+                        <Eye className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
                       </div>
                     );
                   })}
@@ -475,15 +561,15 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 3xl:grid-cols-4 gap-8">
         {/* Pending Localities List */}
-        <Card className="lg:col-span-2 border-none shadow-sm bg-white flex flex-col h-full">
+        <Card className="lg:col-span-2 3xl:col-span-3 border-none shadow-sm bg-white flex flex-col h-full">
           <CardHeader>
             <CardTitle className="text-lg font-semibold">Localidades Não Inspecionadas</CardTitle>
             <CardDescription>Unidades que ainda aguardam auditoria no período selecionado</CardDescription>
           </CardHeader>
           <CardContent className="flex-1 overflow-hidden">
-            <ScrollArea className="h-[300px] pr-4">
+            <ScrollArea className="h-[300px] 2xl:h-[500px] 3xl:h-[600px] pr-4">
               {pendingLocalities.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {pendingLocalities.map((item) => {
@@ -631,6 +717,127 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={!!selectedSessionDetails} onOpenChange={(open) => !open && setSelectedSessionDetails(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+          {selectedSessionDetails && (
+            <>
+              <div className="p-6 border-b border-slate-100 shrink-0 bg-white">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                      Detalhes da Inspeção
+                    </h2>
+                    <div className="flex items-center gap-2 text-slate-500 text-sm">
+                      <MapPin className="w-4 h-4" />
+                      <span className="font-medium">{selectedSessionDetails.locality}</span>
+                      <span className="text-slate-300">•</span>
+                      <span>{selectedSessionDetails.city}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-bold text-slate-900">
+                      {new Date(selectedSessionDetails.date).toLocaleDateString('pt-BR')}
+                    </span>
+                    <Badge variant="secondary" className="block mt-1 text-[10px] uppercase font-bold bg-slate-100 text-slate-600 border-none">
+                      {selectedSessionDetails.sampleMode}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Simplified Status Summary */}
+                <div className="flex items-center gap-4 mt-6 p-3 bg-slate-50 rounded-xl">
+                  {(() => {
+                    const results = Object.values(selectedSessionDetails.results) as InspectionResult[];
+                    const conforme = results.filter(r => r.status === 'conforme').length;
+                    const total = results.length;
+                    const rate = total > 0 ? (conforme / total) * 100 : 0;
+                    const errors = results.filter(r => r.status !== 'conforme').length;
+
+                    return (
+                      <>
+                        <div className="flex-1 px-4 border-r border-slate-200">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase">Conformidade</p>
+                          <p className={cn(
+                            "text-lg font-bold",
+                            rate >= 85 ? "text-green-600" : "text-red-600"
+                          )}>{rate.toFixed(1)}%</p>
+                        </div>
+                        <div className="flex-1 px-4 border-r border-slate-200">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase">Total Itens</p>
+                          <p className="text-lg font-bold text-slate-900">{total}</p>
+                        </div>
+                        <div className="flex-1 px-4">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase">Não Conformidade</p>
+                          <p className="text-lg font-bold text-amber-600">{errors}</p>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-auto bg-white">
+                <div className="divide-y divide-slate-50">
+                  {selectedSessionDetails.items.map((item) => {
+                    const result = selectedSessionDetails.results[item.Patrimônio] as InspectionResult;
+                    return (
+                      <div key={item.Patrimônio} className="p-4 flex items-start gap-4 hover:bg-slate-50/50 transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-sm font-bold text-slate-900">{item.Patrimônio}</span>
+                            <span className="text-[10px] text-slate-400 font-medium">{item.Localização}</span>
+                          </div>
+                          <p className="text-xs text-slate-500 truncate">{item.Descrição}</p>
+                          {result?.notes && (
+                            <p className="text-[11px] text-amber-600 mt-1 italic leading-relaxed bg-amber-50/50 px-2 py-1 rounded">
+                              "{result.notes}"
+                            </p>
+                          )}
+                        </div>
+                        <div className="shrink-0">
+                          {result ? (
+                            <Badge className={cn(
+                              "text-[10px] px-2 py-0 h-6 font-bold uppercase",
+                              result.status === 'conforme' ? "bg-green-100 text-green-700 border-green-200" :
+                              result.status === 'nao_conforme' ? "bg-amber-100 text-amber-700 border-amber-200" :
+                              "bg-red-100 text-red-700 border-red-200"
+                            )}>
+                              {result.status.replace('_', ' ')}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px] px-2 py-0 h-6 font-bold uppercase text-slate-300">Pendente</Badge>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between shrink-0">
+                <p className="text-[10px] text-slate-400 font-medium">Responsável: {selectedSessionDetails.inspectorName || 'Gestor WM'}</p>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedSessionDetails(null)} className="text-slate-500">
+                    Fechar
+                  </Button>
+                  <Button 
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+                    onClick={() => {
+                      setSelectedSessionDetails(null);
+                      onNavigate('history');
+                    }}
+                  >
+                    Histórico Completo
+                    <ArrowRight className="w-3.5 h-3.5 ml-2" />
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

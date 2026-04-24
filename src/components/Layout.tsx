@@ -152,13 +152,16 @@ export default function Layout({ children, activeTab, setActiveTab, user, onLogo
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto p-8">
+        <div className="flex-1 overflow-auto p-4 md:p-8 2xl:p-12 3xl:p-16">
           <motion.div
             key={activeTab}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="max-w-7xl mx-auto"
+            className={cn(
+              "mx-auto transition-all duration-500",
+              activeTab === 'dashboard' ? "max-w-[1800px]" : "max-w-7xl"
+            )}
           >
             {children}
           </motion.div>

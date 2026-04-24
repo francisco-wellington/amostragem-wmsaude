@@ -173,6 +173,12 @@ export default function App() {
     }
   };
 
+  const handleExitSession = () => {
+    setActiveSession(null);
+    setActiveTab('dashboard');
+    toast.info('Rascunho atualizado e sessão suspensa.');
+  };
+
   const handleCancelSession = async () => {
     if (activeSession) {
       await deleteSession(activeSession.id);
@@ -299,6 +305,7 @@ export default function App() {
             onUpdateSession={handleUpdateSession}
             onCompleteSession={handleCompleteSession}
             onCancelSession={handleCancelSession}
+            onExitSession={handleExitSession}
           />
         )}
         {activeTab === 'corrective-actions' && (

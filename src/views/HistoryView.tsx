@@ -16,6 +16,13 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { 
   History, 
   CheckCircle2, 
   XCircle, 
@@ -25,16 +32,24 @@ import {
   MapPin,
   Edit3,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Eye,
+  Camera,
+  Info
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { InspectionSession } from '../types';
+import { InspectionSession, InspectionResult } from '../types';
 import { toast } from 'sonner';
 import Papa from 'papaparse';
 import { cn } from '@/lib/utils';
 import { OverlayLoading } from '../components/LoadingUI';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { 
+  Dialog, 
+  DialogContent, 
+} from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface HistoryViewProps {
   sessions: InspectionSession[];
@@ -45,7 +60,8 @@ interface HistoryViewProps {
 export default function HistoryView({ sessions, onEditSession, isVisitor }: HistoryViewProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [selectedSession, setSelectedSession] = useState<InspectionSession | null>(null);
   
   const sortedSessions = [...sessions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   
@@ -284,6 +300,15 @@ export default function HistoryView({ sessions, onEditSession, isVisitor }: Hist
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="text-slate-600 hover:text-slate-700 hover:bg-slate-50"
+                          onClick={() => setSelectedSession(session)}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          Ver
+                        </Button>
                         {!isVisitor && (
                           <Button 
                             variant="ghost" 
@@ -295,23 +320,6 @@ export default function HistoryView({ sessions, onEditSession, isVisitor }: Hist
                             Editar
                           </Button>
                         )}
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => exportToPDF(session)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <FileDown className="w-4 h-4 mr-2" />
-                          PDF
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => exportToCSV(session)}
-                        >
-                          <FileDown className="w-4 h-4 mr-2" />
-                          CSV
-                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -327,39 +335,213 @@ export default function HistoryView({ sessions, onEditSession, isVisitor }: Hist
           </TableBody>
         </Table>
 
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between p-4 bg-slate-50 border-t border-slate-100">
-            <div className="text-xs text-slate-500">
-              Mostrando {startIndex + 1} até {Math.min(startIndex + itemsPerPage, sortedSessions.length)} de {sortedSessions.length} registros
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="h-8 w-8 p-0"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <div className="text-xs font-bold text-slate-700 min-w-[3rem] text-center">
-                Pág. {currentPage} de {totalPages}
+        {sortedSessions.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-slate-50 border-t border-slate-100 gap-4">
+            <div className="flex items-center gap-4">
+              <div className="text-xs text-slate-500">
+                Mostrando {startIndex + 1} até {Math.min(startIndex + itemsPerPage, sortedSessions.length)} de {sortedSessions.length} registros
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="h-8 w-8 p-0"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase text-slate-400">Exibir:</span>
+                <Select 
+                  value={itemsPerPage.toString()} 
+                  onValueChange={(val) => {
+                    setItemsPerPage(parseInt(val));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="h-7 w-[70px] text-xs bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[5, 10, 15, 25, 50, 100].map(size => (
+                      <SelectItem key={size} value={size.toString()}>{size}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <div className="text-xs font-bold text-slate-700 min-w-[3rem] text-center">
+                  Pág. {currentPage} de {totalPages}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </Card>
       
       <OverlayLoading show={isExporting} message="Gerando arquivo PDF..." />
+
+      <Dialog open={!!selectedSession} onOpenChange={(open) => !open && setSelectedSession(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+          {selectedSession && (
+            <>
+              <div className="p-6 border-b border-slate-100 shrink-0 bg-white">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                      Detalhes da Inspeção
+                    </h2>
+                    <div className="flex items-center gap-2 text-slate-500 text-sm">
+                      <MapPin className="w-4 h-4" />
+                      <span className="font-medium">{selectedSession.locality}</span>
+                      <span className="text-slate-300">•</span>
+                      <span>{selectedSession.city || 'Desconhecido'}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-bold text-slate-900">
+                      {new Date(selectedSession.date).toLocaleDateString('pt-BR')}
+                    </span>
+                    <Badge variant="secondary" className="block mt-1 text-[10px] uppercase font-bold bg-slate-100 text-slate-600 border-none">
+                      {selectedSession.sampleMode}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Simplified Status Summary */}
+                <div className="flex items-center gap-4 mt-6 p-3 bg-slate-50 rounded-xl">
+                  {(() => {
+                    const results = Object.values(selectedSession.results) as InspectionResult[];
+                    const conforme = results.filter(r => r.status === 'conforme').length;
+                    const total = selectedSession.items.length;
+                    const verified = results.length;
+                    const rate = total > 0 ? (conforme / total) * 100 : 0;
+                    const nonConforme = results.filter(r => r.status !== 'conforme').length;
+
+                    return (
+                      <>
+                        <div className="flex-1 px-4 border-r border-slate-200 text-center sm:text-left">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase">Conformidade</p>
+                          <p className={cn(
+                            "text-lg font-bold",
+                            rate >= 85 ? "text-green-600" : "text-red-600"
+                          )}>{rate.toFixed(1)}%</p>
+                        </div>
+                        <div className="flex-1 px-4 border-r border-slate-200 text-center sm:text-left">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase">Total Itens</p>
+                          <p className="text-lg font-bold text-slate-900">{total}</p>
+                        </div>
+                        <div className="flex-1 px-4 text-center sm:text-left">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase">Não Conformidade</p>
+                          <p className="text-lg font-bold text-amber-600">{nonConforme}</p>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              <ScrollArea className="flex-1 bg-white">
+                <div className="divide-y divide-slate-50">
+                  {selectedSession.items.map((item) => {
+                    const result = selectedSession.results[item.Patrimônio];
+                    return (
+                      <div key={item.Patrimônio} className="p-4 flex items-start gap-4 hover:bg-slate-50/50 transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-sm font-bold text-slate-900">{item.Patrimônio}</span>
+                            <span className="text-[10px] text-slate-400 font-medium truncate">{item.Localização}</span>
+                          </div>
+                          <p className="text-xs text-slate-500 truncate mb-2">{item.Descrição}</p>
+                          
+                          {result?.notes && (
+                            <div className="mt-2 p-2 bg-slate-50 rounded italic text-[11px] text-slate-600 border-l-2 border-slate-200 bg-quote">
+                              "{result.notes}"
+                            </div>
+                          )}
+                          
+                          {result?.evidence && (
+                            <div className="mt-3 flex items-center gap-2 text-[10px] font-bold text-blue-600 uppercase">
+                              <Camera className="w-3 h-3" />
+                              Evidência Disponível
+                            </div>
+                          )}
+                        </div>
+                        <div className="shrink-0 flex flex-col items-end gap-2">
+                          {result ? (
+                            <Badge className={cn(
+                              "text-[10px] font-bold uppercase border-none",
+                              result.status === 'conforme' ? "bg-green-100 text-green-700 hover:bg-green-100" :
+                              "bg-red-100 text-red-700 hover:bg-red-100"
+                            )}>
+                              {result.status.replace('_', ' ')}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px] uppercase text-slate-400">
+                              Pendente
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+
+              <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                    <Info className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">Responsável</p>
+                    <p className="text-xs font-bold text-slate-700 mt-0.5">{selectedSession.inspectorName || 'Desconhecido'}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedSession(null)} className="h-8">
+                    Fechar
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      exportToCSV(selectedSession);
+                    }}
+                    className="h-8 border-slate-200 text-slate-600"
+                  >
+                    <FileDown className="w-3 h-3 mr-2 text-slate-400" />
+                    CSV
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    onClick={() => {
+                      exportToPDF(selectedSession);
+                    }}
+                    className="h-8 bg-blue-600 hover:bg-blue-700"
+                  >
+                    <FileDown className="w-3 h-3 mr-2" />
+                    PDF
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

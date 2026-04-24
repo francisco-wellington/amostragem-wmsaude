@@ -50,12 +50,21 @@ interface ChecklistViewProps {
   onUpdateSession: (session: InspectionSession) => void;
   onCompleteSession: (session: InspectionSession) => void;
   onCancelSession: () => void;
+  onExitSession: () => void;
 }
 
-export default function ChecklistView({ session, onUpdateSession, onCompleteSession, onCancelSession }: ChecklistViewProps) {
+export default function ChecklistView({ 
+  session, 
+  onUpdateSession, 
+  onCompleteSession, 
+  onCancelSession,
+  onExitSession 
+}: ChecklistViewProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [isPendingConfirmOpen, setIsPendingConfirmOpen] = useState(false);
+  const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -69,11 +78,21 @@ export default function ChecklistView({ session, onUpdateSession, onCompleteSess
     );
   }
 
-  const handleFinalize = async () => {
+  const handleFinalize = async (force: boolean = false) => {
     if (!session) return;
+    
+    if (!isComplete && !force) {
+      setIsPendingConfirmOpen(true);
+      return;
+    }
+
     setIsFinalizing(true);
+    setIsPendingConfirmOpen(false);
+    setIsSummaryOpen(false);
+    
     try {
       await onCompleteSession(session);
+      toast.success('Inspeção finalizada com sucesso!');
     } catch (error) {
       console.error('Erro ao finalizar:', error);
       toast.error('Ocorreu um erro ao salvar a inspeção.');
@@ -146,6 +165,14 @@ export default function ChecklistView({ session, onUpdateSession, onCompleteSess
     }
   };
 
+  const handleExit = () => {
+    if (!isComplete) {
+      setIsExitConfirmOpen(true);
+    } else {
+      onExitSession();
+    }
+  };
+
   const isComplete = verifiedItems === totalItems;
 
   const getStatusColor = (status?: InspectionStatus) => {
@@ -186,14 +213,24 @@ export default function ChecklistView({ session, onUpdateSession, onCompleteSess
               <span className="text-slate-400 font-medium"> / {totalItems}</span>
               <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Itens Verificados</p>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="text-red-500 border-red-200 hover:bg-red-50"
-              onClick={() => setIsCancelDialogOpen(true)}
-            >
-              Cancelar
-            </Button>
+            <div className="flex flex-col gap-1">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-red-500 border-red-200 hover:bg-red-50 h-8 h-7 text-[10px] uppercase font-bold"
+                onClick={() => setIsCancelDialogOpen(true)}
+              >
+                Excluir
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-slate-500 h-7 text-[10px] uppercase font-bold"
+                onClick={handleExit}
+              >
+                Sair
+              </Button>
+            </div>
           </div>
         </div>
         <Progress value={progress} className="h-2 bg-slate-200" />
@@ -288,8 +325,17 @@ export default function ChecklistView({ session, onUpdateSession, onCompleteSess
                 placeholder="Digite observações relevantes sobre este item..."
                 value={currentResult?.notes || ''}
                 onChange={(e) => handleNotesChange(e.target.value)}
-                className="min-h-[80px]"
+                className={cn(
+                  "min-h-[80px] transition-all",
+                  currentResult?.status && currentResult.status !== 'conforme' && "border-red-500 ring-red-500 focus-visible:ring-red-500 bg-red-50/30"
+                )}
               />
+              {currentResult?.status && currentResult.status !== 'conforme' && (
+                <p className="text-[10px] text-red-500 font-bold flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  Descreva o motivo da não conformidade
+                </p>
+              )}
             </div>
 
             <div className="space-y-3">
@@ -411,22 +457,76 @@ export default function ChecklistView({ session, onUpdateSession, onCompleteSess
           </ScrollArea>
 
           <DialogFooter className="pt-4 border-t">
-            <Button variant="outline" onClick={() => setIsSummaryOpen(false)}>Voltar</Button>
+            <Button variant="outline" onClick={() => setIsSummaryOpen(false)}>Voltar para Revisão</Button>
             <Button 
-              className="bg-green-600 hover:bg-green-700"
-              disabled={!isComplete || isFinalizing}
-              onClick={handleFinalize}
+              className={cn(
+                isComplete ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"
+              )}
+              disabled={isFinalizing}
+              onClick={() => handleFinalize()}
             >
               <Save className="w-4 h-4 mr-2" />
-              Finalizar e Salvar
+              {isComplete ? 'Finalizar e Salvar' : 'Finalizar com Pendências'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
+      {/* Pending Items Confirmation */}
+      <Dialog open={isPendingConfirmOpen} onOpenChange={setIsPendingConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <div className="mx-auto w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-4">
+              <AlertCircle className="w-6 h-6 text-amber-600" />
+            </div>
+            <DialogTitle className="text-center">Itens Pendentes na Amostra</DialogTitle>
+            <CardDescription className="text-center">
+              Você ainda possui <strong>{totalItems - verifiedItems} itens</strong> sem verificação registrada. 
+              Deseja finalizar a inspeção assim mesmo ou prefere revisar os itens restantes?
+            </CardDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-row gap-2 mt-4">
+            <Button 
+              variant="outline" 
+              className="flex-1"
+              onClick={() => {
+                setIsPendingConfirmOpen(false);
+                setIsSummaryOpen(true);
+              }}
+            >
+              Revisar Pendências
+            </Button>
+            <Button 
+              className="flex-1 bg-amber-600 hover:bg-amber-700"
+              onClick={() => handleFinalize(true)}
+            >
+              Finalizar mesmo assim
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <OverlayLoading show={isFinalizing} message="Finalizando e registrando inspeção..." />
 
-      {/* Cancel Confirmation Dialog */}
+      {/* Exit Confirmation Dialog */}
+      <Dialog open={isExitConfirmOpen} onOpenChange={setIsExitConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sair da Inspeção?</DialogTitle>
+            <CardDescription>
+              A inspeção ainda está incompleta ({verifiedItems}/{totalItems}). 
+              Seus dados foram salvos como rascunho, mas a auditoria não aparecerá no histórico como concluída até que você a finalize.
+            </CardDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsExitConfirmOpen(false)}>Continuar Verificação</Button>
+            <Button className="bg-blue-600" onClick={() => {
+              setIsExitConfirmOpen(false);
+              onExitSession();
+            }}>Sim, Sair</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
         <DialogContent>
           <DialogHeader>
