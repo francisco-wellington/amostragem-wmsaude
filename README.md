@@ -31,7 +31,7 @@ Uma solução robusta e profissional para auditoria e inventário patrimonial, p
 - **Animações**: [Framer Motion](https://www.framer.com/motion/)
 - **Ícones**: [Lucide React](https://lucide.dev/)
 - **Geração de PDF**: [jsPDF](https://github.com/parallax/jsPDF)
-
+<!-- 
 ## 📋 Pré-requisitos
 
 Antes de começar, você precisará ter instalado em sua máquina:
@@ -62,7 +62,7 @@ Antes de começar, você precisará ter instalado em sua máquina:
 5. **Build para produção**
    ```bash
    npm run build
-   ```
+   ``` -->
 
 ## 🔐 Segurança e Regras de Acesso
 
