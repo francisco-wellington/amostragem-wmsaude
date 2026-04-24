@@ -41,6 +41,7 @@ import NewSamplingView from './views/NewSamplingView';
 import ChecklistView from './views/ChecklistView';
 import CorrectiveActionsView from './views/CorrectiveActionsView';
 import HistoryView from './views/HistoryView';
+import { ThemeProvider } from './components/ThemeProvider';
 
 export default function App() {
   const [user, setUser] = useState<(User & { isVisitor?: boolean }) | null>(null);
@@ -278,7 +279,7 @@ export default function App() {
   }
 
   return (
-    <>
+    <ThemeProvider defaultTheme="light" storageKey="wm-saude-theme">
       <ConnectivityIndicator />
       <Layout activeTab={activeTab} setActiveTab={handleNavigate} user={user} onLogout={handleLogout}>
         {activeTab === 'dashboard' && (
@@ -325,7 +326,7 @@ export default function App() {
         )}
       </Layout>
       <Toaster position="top-right" richColors />
-    </>
+    </ThemeProvider>
   );
 }
 

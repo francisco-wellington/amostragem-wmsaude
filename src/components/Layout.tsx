@@ -8,12 +8,15 @@ import {
   PlusCircle,
   Menu,
   X,
-  LogOut
+  LogOut,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { OfflineBadge } from './ConnectivityIndicator';
+import { useTheme } from './ThemeProvider';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -34,8 +37,10 @@ export default function Layout({ children, activeTab, setActiveTab, user, onLogo
     { id: 'history', label: 'Histórico', icon: History },
   ].filter(item => !user?.isVisitor || !item.roles);
 
+  const { theme, setTheme } = useTheme();
+
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <div className="flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden">
       {/* Sidebar */}
       <motion.aside
         initial={false}
@@ -140,19 +145,29 @@ export default function Layout({ children, activeTab, setActiveTab, user, onLogo
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 bg-white border-bottom border-slate-200 flex items-center justify-between px-8 shrink-0">
-          <h1 className="text-xl font-semibold text-slate-800">
+        <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8 shrink-0">
+          <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
             {menuItems.find(m => m.id === activeTab)?.label}
           </h1>
           <div className="flex items-center gap-6">
              <OfflineBadge />
-             <div className="hidden md:block text-sm text-slate-500">
-               {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+             <div className="flex items-center gap-4">
+               <div className="hidden md:block text-sm text-slate-500 dark:text-slate-400">
+                 {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+               </div>
+               <Button
+                 variant="ghost"
+                 size="icon"
+                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                 className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
+               >
+                 {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+               </Button>
              </div>
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto p-4 md:p-8 2xl:p-12 3xl:p-16">
+        <div className="flex-1 overflow-auto p-4 md:p-8">
           <motion.div
             key={activeTab}
             initial={{ opacity: 0, y: 20 }}

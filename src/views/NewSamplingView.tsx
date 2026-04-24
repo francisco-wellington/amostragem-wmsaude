@@ -151,23 +151,23 @@ export default function NewSamplingView({
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
+    <div className="max-w-3xl mx-auto space-y-8 text-slate-900 dark:text-slate-100">
       <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold text-slate-900">Configurar Nova Amostragem</h2>
-        <p className="text-slate-500">Selecione a localidade e o método de sorteio para iniciar a auditoria.</p>
+        <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Configurar Nova Amostragem</h2>
+        <p className="text-slate-500 dark:text-slate-400">Selecione a localidade e o método de sorteio para iniciar a auditoria.</p>
       </div>
 
-      <Card className="border-none shadow-lg bg-white overflow-hidden">
+      <Card className="border-none shadow-lg bg-white dark:bg-slate-900 overflow-hidden">
         <div className="h-2 bg-blue-600 w-full" />
         <CardHeader className="pb-4">
-          <CardTitle className="text-xl">Parâmetros da Inspeção</CardTitle>
-          <CardDescription>Defina onde e como a amostragem será realizada.</CardDescription>
+          <CardTitle className="text-xl dark:text-white">Parâmetros da Inspeção</CardTitle>
+          <CardDescription className="dark:text-slate-400">Defina onde e como a amostragem será realizada.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
           {/* City Selection */}
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <Label htmlFor="city" className="text-sm font-semibold text-slate-700">
+              <Label htmlFor="city" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                 Cidade <span className="text-red-500">*</span>
               </Label>
               {showValidation && !selectedCity && (
@@ -185,13 +185,13 @@ export default function NewSamplingView({
               <SelectTrigger 
                 id="city" 
                 className={cn(
-                  "h-12 text-lg transition-all",
-                  showValidation && !selectedCity ? "border-red-300 bg-red-50" : ""
+                  "h-12 text-lg transition-all dark:bg-slate-900 dark:border-slate-800",
+                  showValidation && !selectedCity ? "border-red-300 bg-red-50 dark:bg-red-900/10" : ""
                 )}
               >
                 <SelectValue placeholder="Selecione uma cidade..." />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="dark:bg-slate-900 dark:border-slate-800">
                 {cities.map(city => (
                   <SelectItem key={city} value={city}>{city}</SelectItem>
                 ))}
@@ -202,7 +202,7 @@ export default function NewSamplingView({
           {/* Locality Selection */}
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <Label htmlFor="locality" className="text-sm font-semibold text-slate-700">
+              <Label htmlFor="locality" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                 Localidade <span className="text-red-500">*</span>
               </Label>
               {showValidation && !selectedLocality && (
@@ -220,13 +220,13 @@ export default function NewSamplingView({
               <SelectTrigger 
                 id="locality" 
                 className={cn(
-                  "h-12 text-lg transition-all",
-                  showValidation && !selectedLocality ? "border-red-300 bg-red-50" : ""
+                  "h-12 text-lg transition-all dark:bg-slate-900 dark:border-slate-800",
+                  showValidation && !selectedLocality ? "border-red-300 bg-red-50 dark:bg-red-900/10" : ""
                 )}
               >
                 <SelectValue placeholder={selectedCity ? "Selecione uma localidade..." : "Selecione primeiro a cidade"} />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="dark:bg-slate-900 dark:border-slate-800">
                 {localities.map(loc => (
                   <SelectItem key={loc} value={loc}>{loc}</SelectItem>
                 ))}
@@ -235,16 +235,16 @@ export default function NewSamplingView({
           </div>
 
           {selectedLocality && (
-            <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
               <div className="flex flex-col gap-1">
-                <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Total de Itens</span>
-                <span className="text-2xl font-bold text-slate-900">{totalItems}</span>
+                <span className="text-xs text-slate-500 dark:text-slate-500 uppercase font-bold tracking-wider">Total de Itens</span>
+                <span className="text-2xl font-bold text-slate-900 dark:text-white">{totalItems}</span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">
+                <span className="text-xs text-slate-500 dark:text-slate-500 uppercase font-bold tracking-wider">
                   {sampleMode === 'completo' ? 'Total de Itens' : 'Tamanho da Amostra (30%)'}
                 </span>
-                <span className="text-2xl font-bold text-blue-600">
+                <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                   {sampleMode === 'completo' ? totalItems : sampleSize}
                 </span>
               </div>
@@ -253,22 +253,22 @@ export default function NewSamplingView({
 
           {/* Sample Mode Selection */}
           <div className="space-y-3">
-            <Label className="text-sm font-semibold text-slate-700">Método de Amostragem</Label>
+            <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Método de Amostragem</Label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <button
                 onClick={() => setSampleMode('aleatoria')}
                 className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all text-center ${
                   sampleMode === 'aleatoria' 
-                    ? 'border-blue-600 bg-blue-50/50' 
-                    : 'border-slate-100 hover:border-slate-200 bg-white'
+                    ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-900/20' 
+                    : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
                 }`}
               >
-                <div className={`p-3 rounded-lg ${sampleMode === 'aleatoria' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                <div className={`p-3 rounded-lg ${sampleMode === 'aleatoria' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
                   <Dices className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="font-bold text-slate-900">Aleatória</p>
-                  <p className="text-[10px] text-slate-500 mt-1">Sorteio de 30% dos itens.</p>
+                  <p className="font-bold text-slate-900 dark:text-white">Aleatória</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Sorteio de 30% dos itens.</p>
                 </div>
               </button>
 
@@ -276,16 +276,16 @@ export default function NewSamplingView({
                 onClick={() => setSampleMode('completo')}
                 className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all text-center ${
                   sampleMode === 'completo' 
-                    ? 'border-blue-600 bg-blue-50/50' 
-                    : 'border-slate-100 hover:border-slate-200 bg-white'
+                    ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-900/20' 
+                    : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
                 }`}
               >
-                <div className={`p-3 rounded-lg ${sampleMode === 'completo' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                <div className={`p-3 rounded-lg ${sampleMode === 'completo' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
                   <CheckCircle2 className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="font-bold text-slate-900">Completo</p>
-                  <p className="text-[10px] text-slate-500 mt-1">Inspeção de 100% dos itens.</p>
+                  <p className="font-bold text-slate-900 dark:text-white">Completo</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Inspeção de 100% dos itens.</p>
                 </div>
               </button>
 
@@ -293,16 +293,16 @@ export default function NewSamplingView({
                 onClick={() => setSampleMode('manual')}
                 className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all text-center ${
                   sampleMode === 'manual' 
-                    ? 'border-blue-600 bg-blue-50/50' 
-                    : 'border-slate-100 hover:border-slate-200 bg-white'
+                    ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-900/20' 
+                    : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
                 }`}
               >
-                <div className={`p-3 rounded-lg ${sampleMode === 'manual' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                <div className={`p-3 rounded-lg ${sampleMode === 'manual' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
                   <Edit3 className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="font-bold text-slate-900">Manual</p>
-                  <p className="text-[10px] text-slate-500 mt-1">Inserir patrimônios à mão.</p>
+                  <p className="font-bold text-slate-900 dark:text-white">Manual</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Inserir patrimônios à mão.</p>
                 </div>
               </button>
             </div>
@@ -314,33 +314,33 @@ export default function NewSamplingView({
               animate={{ opacity: 1, height: 'auto' }}
               className="space-y-3"
             >
-              <Label htmlFor="manual-patrimonies" className="text-sm font-semibold text-slate-700">
+              <Label htmlFor="manual-patrimonies" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                 Números de Patrimônio
               </Label>
               <div className="relative">
                 <Textarea
                   id="manual-patrimonies"
                   placeholder="Digite os números de patrimônio separados por linha ou vírgula..."
-                  className="min-h-[120px] pt-10"
+                  className="min-h-[120px] pt-10 dark:bg-slate-900 dark:border-slate-800 dark:text-white"
                   value={manualPatrimonies}
                   onChange={(e) => setManualPatrimonies(e.target.value)}
                 />
                 <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
               </div>
-              <p className="text-[10px] text-slate-500">
+              <p className="text-[10px] text-slate-500 dark:text-slate-500">
                 Ex: 12345, 67890, 11223 (Um por linha ou separado por vírgula)
               </p>
             </motion.div>
           )}
         </CardContent>
-        <CardFooter className="bg-slate-50 p-6 flex justify-end">
+        <CardFooter className="bg-slate-50 dark:bg-slate-800/50 p-6 flex justify-end border-t border-slate-100 dark:border-slate-800">
           <Button 
             size="lg" 
             className={cn(
-              "px-8 h-12 text-lg font-semibold shadow-lg transition-all",
+              "px-8 h-12 text-lg font-semibold shadow-lg transition-all border-none",
               !selectedLocality 
-                ? "bg-slate-200 text-slate-500 cursor-not-allowed grayscale" 
-                : "bg-blue-600 hover:bg-blue-700 shadow-blue-200"
+                ? "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-600 cursor-not-allowed grayscale" 
+                : "bg-blue-600 hover:bg-blue-700 shadow-blue-200 dark:shadow-none"
             )}
             onClick={handleStart}
           >
@@ -350,7 +350,7 @@ export default function NewSamplingView({
         </CardFooter>
       </Card>
 
-      <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100 text-blue-800 text-sm">
+      <div className="flex items-center gap-4 p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/30 text-blue-800 dark:text-blue-300 text-sm">
         <AlertCircle className="w-5 h-5 shrink-0" />
         <p>
           <strong>Dica:</strong> A inspeção completa é recomendada para auditorias de encerramento de ciclo ou inventários anuais.

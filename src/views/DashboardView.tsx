@@ -53,6 +53,7 @@ import {
 import { cn } from '@/lib/utils';
 import { ButtonLoading } from '../components/LoadingUI';
 import { InspectionSession, InventoryItem, CorrectiveAction, InspectionResult } from '../types';
+import { useTheme } from '../components/ThemeProvider';
 
 interface DashboardViewProps {
   sessions: InspectionSession[];
@@ -64,6 +65,7 @@ interface DashboardViewProps {
 }
 
 export default function DashboardView({ sessions, inventory, actions, onNavigate, onRefresh, isVisitor }: DashboardViewProps) {
+  const { theme } = useTheme();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedSessionDetails, setSelectedSessionDetails] = useState<InspectionSession | null>(null);
   const [localityFilter, setLocalityFilter] = useState<string>('Todas');
@@ -274,21 +276,21 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
   });
 
   return (
-    <div className="space-y-8 pb-10">
+    <div className="space-y-8 pb-10 text-slate-900 dark:text-slate-100">
       {/* Modern Filters */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+      <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+            <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600 dark:text-blue-400">
               <TrendingUp className="w-4 h-4" />
             </div>
-            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-tight">Filtros de Auditoria</h2>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-tight">Filtros de Auditoria</h2>
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
-              className="text-slate-400 hover:text-blue-600 transition-all min-w-[160px] flex justify-center"
+              className="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all min-w-[160px] flex justify-center"
               onClick={async () => {
                 if (onRefresh) {
                   setIsRefreshing(true);
@@ -312,7 +314,7 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
             <Button 
               variant="ghost" 
               size="sm"
-              className="text-slate-400 hover:text-red-500 transition-colors"
+              className="text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
               onClick={() => {
                 setLocalityFilter('Todas');
                 setCityFilter('Todas');
@@ -327,7 +329,7 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-slate-500">
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
               <Building2 className="w-3.5 h-3.5" />
               <label className="text-[10px] font-bold uppercase tracking-wider">Cidade</label>
             </div>
@@ -335,10 +337,10 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
               setCityFilter(val);
               setLocalityFilter('Todas');
             }}>
-              <SelectTrigger className="w-full bg-slate-50/50 border-slate-200 hover:border-blue-300 transition-colors h-11">
+              <SelectTrigger className="w-full bg-slate-50/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-500 transition-colors h-11 text-slate-900 dark:text-slate-100">
                 <SelectValue placeholder="Todas as cidades" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="dark:bg-slate-900 dark:border-slate-800">
                 <SelectItem value="Todas">Todas as cidades</SelectItem>
                 {cities.map(city => (
                   <SelectItem key={city} value={city}>{city}</SelectItem>
@@ -348,15 +350,15 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-slate-500">
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
               <MapPin className="w-3.5 h-3.5" />
               <label className="text-[10px] font-bold uppercase tracking-wider">Unidade / Localidade</label>
             </div>
             <Select value={localityFilter} onValueChange={setLocalityFilter}>
-              <SelectTrigger className="w-full bg-slate-50/50 border-slate-200 hover:border-blue-300 transition-colors h-11">
+              <SelectTrigger className="w-full bg-slate-50/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-500 transition-colors h-11 text-slate-900 dark:text-slate-100">
                 <SelectValue placeholder="Todas as localidades" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="dark:bg-slate-900 dark:border-slate-800">
                 <SelectItem value="Todas">Todas as localidades</SelectItem>
                 {localities.map(loc => (
                   <SelectItem key={loc} value={loc}>{loc}</SelectItem>
@@ -366,15 +368,15 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-slate-500">
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
               <CalendarDays className="w-3.5 h-3.5" />
               <label className="text-[10px] font-bold uppercase tracking-wider">Ano de Amostragem</label>
             </div>
             <Select value={yearFilter} onValueChange={setYearFilter}>
-              <SelectTrigger className="w-full bg-slate-50/50 border-slate-200 hover:border-blue-300 transition-colors h-11">
+              <SelectTrigger className="w-full bg-slate-50/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-500 transition-colors h-11 text-slate-900 dark:text-slate-100">
                 <SelectValue placeholder="Selecione o ano" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="dark:bg-slate-900 dark:border-slate-800">
                 <SelectItem value="Todas">Todo o histórico</SelectItem>
                 {years.map(year => (
                   <SelectItem key={year} value={year}>{year}</SelectItem>
@@ -387,85 +389,100 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-        <Card className="border-none shadow-sm bg-white overflow-hidden">
-          <CardContent className="pt-6 2xl:pt-10 2xl:pb-8 text-center sm:text-left">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
-              <div>
-                <p className="text-sm 2xl:text-base font-medium text-slate-500">Total Patrimônio</p>
-                <h3 className="text-2xl 2xl:text-4xl font-bold text-slate-900">{totalItems}</h3>
+        <Card className="border-none shadow-sm bg-white dark:bg-slate-900 overflow-hidden group hover:shadow-md transition-all duration-300 relative">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+          <CardContent className="pt-6 2xl:pt-10 2xl:pb-8 relative z-10">
+            <div className="flex flex-col gap-4">
+              <div className="p-3 2xl:p-4 bg-blue-100/50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl w-fit">
+                <Package className="w-5 h-5 2xl:w-6 2xl:h-6" />
               </div>
-              <div className="p-3 2xl:p-5 bg-blue-50 rounded-2xl text-blue-600">
-                <Package className="w-6 h-6 2xl:w-8 2xl:h-8" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-sm bg-white overflow-hidden">
-          <CardContent className="pt-6 2xl:pt-10 2xl:pb-8 text-center sm:text-left">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
-              <div>
-                <p className="text-sm 2xl:text-base font-medium text-slate-500">Total Unidades</p>
-                <h3 className="text-2xl 2xl:text-4xl font-bold text-slate-900">{totalLocalities}</h3>
-              </div>
-              <div className="p-3 2xl:p-5 bg-indigo-50 rounded-2xl text-indigo-600">
-                <Building2 className="w-6 h-6 2xl:w-8 2xl:h-8" />
+              <div className="space-y-1">
+                <p className="text-[10px] 2xl:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total Patrimônio</p>
+                <h3 className="text-2xl 2xl:text-4xl font-black text-slate-900 dark:text-slate-100 leading-none">{totalItems}</h3>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm bg-white overflow-hidden ring-1 ring-amber-100">
-          <CardContent className="pt-6 2xl:pt-10 2xl:pb-8 text-center sm:text-left">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
-              <div>
-                <p className="text-sm 2xl:text-base font-medium text-slate-500">Uni. Pendentes</p>
-                <h3 className="text-2xl 2xl:text-4xl font-bold text-amber-600">{pendingLocalities.length}</h3>
+        <Card className="border-none shadow-sm bg-white dark:bg-slate-900 overflow-hidden group hover:shadow-md transition-all duration-300 relative">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+          <CardContent className="pt-6 2xl:pt-10 2xl:pb-8 relative z-10">
+            <div className="flex flex-col gap-4">
+              <div className="p-3 2xl:p-4 bg-indigo-100/50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-xl w-fit">
+                <Building2 className="w-5 h-5 2xl:w-6 2xl:h-6" />
               </div>
-              <div className="p-3 2xl:p-5 bg-amber-50 rounded-2xl text-amber-600">
-                <MapPinOff className="w-6 h-6 2xl:w-8 2xl:h-8" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-sm bg-white overflow-hidden">
-          <CardContent className="pt-6 2xl:pt-10 2xl:pb-8 text-center sm:text-left">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
-              <div>
-                <p className="text-sm 2xl:text-base font-medium text-slate-500">Conformidade</p>
-                <h3 className="text-2xl 2xl:text-4xl font-bold text-slate-900">{conformityRate.toFixed(1)}%</h3>
-              </div>
-              <div className={`p-3 2xl:p-5 rounded-2xl ${conformityRate >= 85 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                {conformityRate >= 85 ? <CheckCircle2 className="w-6 h-6 2xl:w-8 2xl:h-8" /> : <AlertTriangle className="w-6 h-6 2xl:w-8 2xl:h-8" />}
+              <div className="space-y-1">
+                <p className="text-[10px] 2xl:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total Unidades</p>
+                <h3 className="text-2xl 2xl:text-4xl font-black text-slate-900 dark:text-slate-100 leading-none">{totalLocalities}</h3>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm bg-white overflow-hidden">
-          <CardContent className="pt-6 2xl:pt-10 2xl:pb-8 text-center sm:text-left">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
-              <div>
-                <p className="text-sm 2xl:text-base font-medium text-slate-500">Inspeções</p>
-                <h3 className="text-2xl 2xl:text-4xl font-bold text-slate-900">{completedInspections}</h3>
+        <Card className="border-none shadow-sm bg-white dark:bg-slate-900 overflow-hidden group hover:shadow-md transition-all duration-300 relative ring-1 ring-amber-100/50 dark:ring-amber-900/20">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+          <CardContent className="pt-6 2xl:pt-10 2xl:pb-8 relative z-10">
+            <div className="flex flex-col gap-4">
+              <div className="p-3 2xl:p-4 bg-amber-100/50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-xl w-fit">
+                <MapPinOff className="w-5 h-5 2xl:w-6 2xl:h-6" />
               </div>
-              <div className="p-3 2xl:p-5 bg-purple-50 rounded-2xl text-purple-600">
-                <TrendingUp className="w-6 h-6 2xl:w-8 2xl:h-8" />
+              <div className="space-y-1">
+                <p className="text-[10px] 2xl:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Uni. Pendentes</p>
+                <h3 className="text-2xl 2xl:text-4xl font-black text-amber-600 dark:text-amber-400 leading-none">{pendingLocalities.length}</h3>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm bg-white overflow-hidden">
-          <CardContent className="pt-6 2xl:pt-10 2xl:pb-8 text-center sm:text-left">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
-              <div>
-                <p className="text-sm 2xl:text-base font-medium text-slate-500">Ações Pendentes</p>
-                <h3 className="text-2xl 2xl:text-4xl font-bold text-slate-900">{pendingActions}</h3>
+        <Card className="border-none shadow-sm bg-white dark:bg-slate-900 overflow-hidden group hover:shadow-md transition-all duration-300 relative">
+          <div className={cn(
+            "absolute top-0 right-0 w-24 h-24 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-110",
+            conformityRate >= 85 ? "bg-green-500/5" : "bg-red-500/5"
+          )} />
+          <CardContent className="pt-6 2xl:pt-10 2xl:pb-8 relative z-10">
+            <div className="flex flex-col gap-4">
+              <div className={cn(
+                "p-3 2xl:p-4 rounded-xl w-fit",
+                conformityRate >= 85 ? "bg-green-100/50 dark:bg-green-900/40 text-green-600 dark:text-green-400" : "bg-red-100/50 dark:bg-red-900/40 text-red-600 dark:text-red-400"
+              )}>
+                {conformityRate >= 85 ? <CheckCircle2 className="w-5 h-5 2xl:w-6 2xl:h-6" /> : <AlertTriangle className="w-5 h-5 2xl:w-6 2xl:h-6" />}
               </div>
-              <div className="p-3 2xl:p-5 bg-orange-50 rounded-2xl text-orange-600">
-                <XCircle className="w-6 h-6 2xl:w-8 2xl:h-8" />
+              <div className="space-y-1">
+                <p className="text-[10px] 2xl:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Conformidade</p>
+                <h3 className={cn(
+                  "text-2xl 2xl:text-4xl font-black leading-none",
+                  conformityRate >= 85 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                )}>{conformityRate.toFixed(1)}%</h3>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-sm bg-white dark:bg-slate-900 overflow-hidden group hover:shadow-md transition-all duration-300 relative">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+          <CardContent className="pt-6 2xl:pt-10 2xl:pb-8 relative z-10">
+            <div className="flex flex-col gap-4">
+              <div className="p-3 2xl:p-4 bg-purple-100/50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 rounded-xl w-fit">
+                <TrendingUp className="w-5 h-5 2xl:w-6 2xl:h-6" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] 2xl:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Inspeções</p>
+                <h3 className="text-2xl 2xl:text-4xl font-black text-slate-900 dark:text-slate-100 leading-none">{completedInspections}</h3>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-sm bg-white dark:bg-slate-900 overflow-hidden group hover:shadow-md transition-all duration-300 relative">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+          <CardContent className="pt-6 2xl:pt-10 2xl:pb-8 relative z-10">
+            <div className="flex flex-col gap-4">
+              <div className="p-3 2xl:p-4 bg-orange-100/50 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 rounded-xl w-fit">
+                <XCircle className="w-5 h-5 2xl:w-6 2xl:h-6" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] 2xl:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Ações Pendentes</p>
+                <h3 className="text-2xl 2xl:text-4xl font-black text-slate-900 dark:text-slate-100 leading-none">{pendingActions}</h3>
               </div>
             </div>
           </CardContent>
@@ -474,20 +491,26 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
 
       <div className="grid grid-cols-1 lg:grid-cols-3 3xl:grid-cols-4 gap-8">
         {/* Chart */}
-        <Card className="lg:col-span-2 3xl:col-span-3 border-none shadow-sm bg-white">
+        <Card className="lg:col-span-2 3xl:col-span-3 border-none shadow-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">Conformidade por Localidade (Últimas 5)</CardTitle>
-            <CardDescription>Percentual de itens conformes na amostra</CardDescription>
+            <CardTitle className="text-lg font-semibold dark:text-white">Conformidade por Localidade (Últimas 5)</CardTitle>
+            <CardDescription className="dark:text-slate-400">Percentual de itens conformes na amostra</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px] 2xl:h-[500px] 3xl:h-[600px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} unit="%" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#f1f5f9'} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: theme === 'dark' ? '#94a3b8' : '#64748b' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: theme === 'dark' ? '#94a3b8' : '#64748b' }} unit="%" />
                 <Tooltip 
-                  cursor={{ fill: '#f8fafc' }}
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                  cursor={{ fill: theme === 'dark' ? '#1e293b' : '#f8fafc' }}
+                  contentStyle={{ 
+                    borderRadius: '8px', 
+                    border: 'none', 
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                    backgroundColor: theme === 'dark' ? '#1e293b' : '#ffffff',
+                    color: theme === 'dark' ? '#f8fafc' : '#1e293b'
+                  }}
                 />
                 <Bar dataKey="rate" radius={[4, 4, 0, 0]}>
                   {chartData.map((entry, index) => (
@@ -500,10 +523,10 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
         </Card>
 
         {/* Localities List */}
-        <Card className="border-none shadow-sm bg-white flex flex-col h-full">
+        <Card className="border-none shadow-sm bg-white dark:bg-slate-900 flex flex-col h-full text-slate-900 dark:text-slate-100">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">Localidades Inspecionadas</CardTitle>
-            <CardDescription>Unidades que já passaram por auditoria</CardDescription>
+            <CardTitle className="text-lg font-semibold dark:text-white">Localidades Inspecionadas</CardTitle>
+            <CardDescription className="dark:text-slate-400">Unidades que já passaram por auditoria</CardDescription>
           </CardHeader>
           <CardContent className="flex-1 overflow-hidden">
             <ScrollArea className="h-[250px] 2xl:h-[450px] 3xl:h-[550px] pr-4">
@@ -522,8 +545,8 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
                         className={cn(
                           "group flex items-center gap-3 p-3 rounded-lg border transition-all duration-300 cursor-pointer",
                           isSelected 
-                            ? "bg-blue-50 border-blue-200 shadow-sm ring-1 ring-blue-100" 
-                            : "bg-slate-50 border-slate-100 hover:border-blue-200 hover:bg-white"
+                            ? "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 shadow-sm ring-1 ring-blue-100 dark:ring-blue-900/40" 
+                            : "bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-700 hover:bg-white dark:hover:bg-slate-800"
                         )}
                         onClick={() => setSelectedSessionDetails(item.lastSession)}
                       >
@@ -534,26 +557,26 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
                         <div className="flex flex-col overflow-hidden flex-1">
                           <span className={cn(
                             "text-sm font-medium truncate",
-                            isSelected ? "text-blue-900" : "text-slate-700"
+                            isSelected ? "text-blue-900 dark:text-blue-100" : "text-slate-700 dark:text-slate-300"
                           )}>
                             {item.locality}
                           </span>
                           <span className={cn(
                             "text-[10px] font-bold uppercase",
-                            isSelected ? "text-blue-400" : "text-slate-400"
+                            isSelected ? "text-blue-400 dark:text-blue-500" : "text-slate-400 dark:text-slate-500"
                           )}>
                             {item.city} • {rate.toFixed(0)}% Conformidade
                           </span>
                         </div>
-                        <Eye className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
+                        <Eye className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-blue-500 transition-colors" />
                       </div>
                     );
                   })}
                 </div>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center py-8">
-                  <MapPin className="w-8 h-8 text-slate-200 mb-2" />
-                  <p className="text-slate-500 text-xs">Nenhuma localidade inspecionada.</p>
+                  <MapPin className="w-8 h-8 text-slate-200 dark:text-slate-800 mb-2" />
+                  <p className="text-slate-500 dark:text-slate-400 text-xs">Nenhuma localidade inspecionada.</p>
                 </div>
               )}
             </ScrollArea>
@@ -563,10 +586,10 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
 
       <div className="grid grid-cols-1 lg:grid-cols-3 3xl:grid-cols-4 gap-8">
         {/* Pending Localities List */}
-        <Card className="lg:col-span-2 3xl:col-span-3 border-none shadow-sm bg-white flex flex-col h-full">
+        <Card className="lg:col-span-2 3xl:col-span-3 border-none shadow-sm bg-white dark:bg-slate-900 flex flex-col h-full text-slate-900 dark:text-slate-100">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">Localidades Não Inspecionadas</CardTitle>
-            <CardDescription>Unidades que ainda aguardam auditoria no período selecionado</CardDescription>
+            <CardTitle className="text-lg font-semibold dark:text-white">Localidades Não Inspecionadas</CardTitle>
+            <CardDescription className="dark:text-slate-400">Unidades que ainda aguardam auditoria no período selecionado</CardDescription>
           </CardHeader>
           <CardContent className="flex-1 overflow-hidden">
             <ScrollArea className="h-[300px] 2xl:h-[500px] 3xl:h-[600px] pr-4">
@@ -581,24 +604,24 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
                         className={cn(
                           "flex items-center gap-3 p-3 rounded-lg border transition-all duration-300",
                           isSelected 
-                            ? "bg-amber-50 border-amber-200 shadow-sm ring-1 ring-amber-100" 
-                            : "bg-slate-50 border-slate-100"
+                            ? "bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800 shadow-sm ring-1 ring-amber-100 dark:ring-amber-900/40" 
+                            : "bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800 shadow-sm"
                         )}
                       >
                         <div className={cn(
                           "w-2 h-2 rounded-full",
-                          isSelected ? "bg-amber-600 animate-pulse" : "bg-slate-300"
+                          isSelected ? "bg-amber-600 animate-pulse" : "bg-slate-300 dark:bg-slate-600"
                         )} />
                         <div className="flex flex-col overflow-hidden">
                           <span className={cn(
                             "text-sm font-medium truncate",
-                            isSelected ? "text-amber-900" : "text-slate-700"
+                            isSelected ? "text-amber-900 dark:text-amber-100" : "text-slate-700 dark:text-slate-300"
                           )}>
                             {item.locality}
                           </span>
                           <span className={cn(
                             "text-[10px] font-bold uppercase",
-                            isSelected ? "text-amber-400" : "text-slate-400"
+                            isSelected ? "text-amber-400 dark:text-amber-500" : "text-slate-400 dark:text-slate-500"
                           )}>
                             {item.city}
                           </span>
@@ -609,7 +632,7 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
                             size="sm" 
                             className={cn(
                               "ml-auto p-0 h-8 w-8",
-                              isSelected ? "text-amber-700 hover:bg-amber-100" : "text-blue-600 hover:bg-blue-50"
+                              isSelected ? "text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50" : "text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/50"
                             )}
                             onClick={() => onNavigate('new-sampling', { city: item.city, locality: item.locality })}
                           >
@@ -622,9 +645,9 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
                 </div>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center py-12">
-                  <CheckCircle2 className="w-12 h-12 text-green-100 mb-4" />
-                  <p className="text-slate-900 font-bold">Todas as unidades foram inspecionadas!</p>
-                  <p className="text-slate-500 text-sm">Excelente trabalho de cobertura.</p>
+                  <CheckCircle2 className="w-12 h-12 text-green-100 dark:text-green-900/20 mb-4" />
+                  <p className="text-slate-900 dark:text-slate-100 font-bold">Todas as unidades foram inspecionadas!</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">Excelente trabalho de cobertura.</p>
                 </div>
               )}
             </ScrollArea>
@@ -632,7 +655,7 @@ export default function DashboardView({ sessions, inventory, actions, onNavigate
         </Card>
 
         {/* Recent Activity */}
-        <Card className="border-none shadow-sm bg-white">
+        <Card className="border-none shadow-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
           <CardHeader>
             <CardTitle className="text-lg font-semibold">Última Inspeção</CardTitle>
           </CardHeader>
