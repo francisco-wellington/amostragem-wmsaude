@@ -29,6 +29,7 @@ export interface InspectionSession {
   items: InventoryItem[];
   results: Record<string, InspectionResult>;
   completed: boolean;
+  isTabletOnly?: boolean;
   inspectorName?: string;
   inspectorEmail?: string;
 }

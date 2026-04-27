@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Wifi, WifiOff, CloudUpload, CloudOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '@/lib/utils';
+import { cn } from '../../lib/utils';
 import { toast } from 'sonner';
 
 export function ConnectivityIndicator() {

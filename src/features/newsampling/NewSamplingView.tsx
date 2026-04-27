@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Card, 
   CardContent, 
@@ -7,17 +7,17 @@ import {
   CardTitle,
   CardDescription,
   CardFooter
-} from '@/components/ui/card';
+} from '../../components/ui/card';
 import { 
   Select, 
   SelectContent, 
   SelectItem, 
   SelectTrigger, 
   SelectValue 
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
+} from '../../components/ui/select';
+import { Button } from '../../components/ui/button';
+import { Label } from '../../components/ui/label';
+import { Badge } from '../../components/ui/badge';
 import { 
   Dices, 
   Layers, 
@@ -25,14 +25,16 @@ import {
   AlertCircle,
   ArrowRight,
   Edit3,
-  Search
+  Search,
+  Tablet
 } from 'lucide-react';
 import { InventoryItem, InspectionSession } from '../../shared/types';
 import { generateSample, generateUUID } from '../../shared/services/inventoryService';
-import { Textarea } from '@/components/ui/textarea';
+import { Textarea } from '../../components/ui/textarea';
+import { Switch } from '../../components/ui/switch';
 import { OverlayLoading } from '../../shared/components/LoadingUI';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn } from '../../lib/utils';
 
 interface NewSamplingViewProps {
   inventory: InventoryItem[];
@@ -50,6 +52,7 @@ export default function NewSamplingView({
   const [selectedCity, setSelectedCity] = useState<string>(preSelectedCity);
   const [selectedLocality, setSelectedLocality] = useState<string>(preSelectedLocality);
   const [sampleMode, setSampleMode] = useState<'aleatoria' | 'completo' | 'manual'>('aleatoria');
+  const [isTabletOnly, setIsTabletOnly] = useState(false);
   const [manualPatrimonies, setManualPatrimonies] = useState<string>('');
   const [isStarting, setIsStarting] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
@@ -74,9 +77,11 @@ export default function NewSamplingView({
     return inventory.filter(item => 
       item.Cidade === selectedCity && 
       item.Localidade === selectedLocality &&
-      !item.Descrição?.toUpperCase().includes('TABLET')
+      (isTabletOnly 
+        ? item.Descrição?.toUpperCase().includes('TABLET') 
+        : !item.Descrição?.toUpperCase().includes('TABLET'))
     );
-  }, [inventory, selectedCity, selectedLocality]);
+  }, [inventory, selectedCity, selectedLocality, isTabletOnly]);
 
   const totalItems = filteredItems.length;
   const sampleSize = Math.ceil(totalItems * 0.3);
@@ -85,6 +90,11 @@ export default function NewSamplingView({
     if (!selectedLocality) {
       setShowValidation(true);
       toast.error('Por favor, selecione uma localidade.');
+      return;
+    }
+
+    if (sampleMode !== 'manual' && totalItems === 0) {
+      toast.error('Nenhum item disponível para amostragem nesta localidade.');
       return;
     }
 
@@ -102,12 +112,6 @@ export default function NewSamplingView({
         toast.error('Insira pelo menos um número de patrimônio.');
         return;
       }
-
-      // Find items in the filtered list (by locality) first, then in the whole inventory if needed
-      // Actually, user might want to enter patrimonies from ANY locality if they are doing it manually?
-      // But the prompt says "select locality, then manual". 
-      // Let's search in the whole inventory but filter by locality if selected?
-      // No, let's search in the whole inventory to be more flexible, but warn if not in locality.
       
       const foundItems: InventoryItem[] = [];
       const notFound: string[] = [];
@@ -130,6 +134,11 @@ export default function NewSamplingView({
     } else {
       sample = generateSample(filteredItems, sampleMode);
     }
+
+    if (sample.length === 0) {
+      toast.error('A amostragem resultou em 0 itens. Verifique os filtros.');
+      return;
+    }
     
     const session: InspectionSession = {
       id: generateUUID(),
@@ -139,7 +148,8 @@ export default function NewSamplingView({
       sampleMode,
       items: sample,
       results: {},
-      completed: false
+      completed: false,
+      isTabletOnly
     };
 
     await onStartSession(session);
@@ -235,25 +245,67 @@ export default function NewSamplingView({
             </Select>
           </div>
 
-          {selectedLocality && (
-            <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-slate-500 dark:text-slate-500 uppercase font-bold tracking-wider">Total de Itens</span>
-                <span className="text-2xl font-bold text-slate-900 dark:text-white">
-                  {totalItems}
-                  <span className="text-[10px] ml-2 text-slate-400 font-normal normal-case">(Tablets excluídos)</span>
-                </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-slate-500 dark:text-slate-500 uppercase font-bold tracking-wider">
-                  {sampleMode === 'completo' ? 'Total de Itens' : 'Tamanho da Amostra (30%)'}
-                </span>
-                <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {sampleMode === 'completo' ? totalItems : sampleSize}
-                </span>
-              </div>
-            </div>
-          )}
+          <AnimatePresence>
+            {selectedLocality && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-6"
+              >
+                {/* Tablet Toggle */}
+                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+                      <Tablet className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <Label htmlFor="tablet-only" className="text-sm font-bold text-slate-900 dark:text-white cursor-pointer">
+                        Amostragem Apenas de Tablets
+                      </Label>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">Ao marcar, a amostragem será feita exclusivamente com equipamentos do tipo Tablet.</p>
+                    </div>
+                  </div>
+                  <Switch 
+                    id="tablet-only" 
+                    checked={isTabletOnly} 
+                    onCheckedChange={setIsTabletOnly}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-slate-500 dark:text-slate-500 uppercase font-bold tracking-wider">Total de Itens</span>
+                    <span className="text-2xl font-bold text-slate-900 dark:text-white">
+                      {totalItems}
+                      {totalItems > 0 && (
+                        <span className="text-[10px] ml-2 text-slate-400 font-normal normal-case">
+                          ({isTabletOnly ? 'Apenas Tablets' : 'Tablets excluídos'})
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-slate-500 dark:text-slate-500 uppercase font-bold tracking-wider">
+                      {sampleMode === 'completo' ? 'Total de Itens' : 'Tamanho da Amostra (30%)'}
+                    </span>
+                    <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      {sampleMode === 'completo' ? totalItems : sampleSize}
+                    </span>
+                  </div>
+                </div>
+
+                {totalItems === 0 && (
+                  <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30 text-red-800 dark:text-red-300">
+                    <AlertCircle className="w-5 h-5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-bold">Nenhum item encontrado.</p>
+                      <p className="text-xs opacity-80">Não há itens disponíveis para esta localidade com os filtros atuais (Modo: {isTabletOnly ? 'Apenas Tablets' : 'Normal - Sem Tablets'}).</p>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Sample Mode Selection */}
           <div className="space-y-3">

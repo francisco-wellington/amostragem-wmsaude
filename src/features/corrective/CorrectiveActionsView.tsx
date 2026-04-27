@@ -5,11 +5,11 @@ import {
   CardHeader, 
   CardTitle,
   CardDescription
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
 import { 
   Table, 
   TableBody, 
@@ -17,14 +17,14 @@ import {
   TableHead, 
   TableHeader, 
   TableRow 
-} from '@/components/ui/table';
+} from '../../components/ui/table';
 import { 
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue 
-} from '@/components/ui/select';
+} from '../../components/ui/select';
 import { 
   AlertCircle, 
   CheckCircle2, 
@@ -40,7 +40,7 @@ import {
   Filter
 } from 'lucide-react';
 import { CorrectiveAction, InventoryItem } from '../../shared/types';
-import { Textarea } from '@/components/ui/textarea';
+import { Textarea } from '../../components/ui/textarea';
 import { 
   Dialog,
   DialogContent,
@@ -48,15 +48,15 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter
-} from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
+} from '../../components/ui/dialog';
+import { ScrollArea } from '../../components/ui/scroll-area';
 import { 
   Tooltip,
   TooltipContent,
   TooltipTrigger
-} from '@/components/ui/tooltip';
+} from '../../components/ui/tooltip';
 import { OverlayLoading } from '../../shared/components/LoadingUI';
-import { cn } from '@/lib/utils';
+import { cn } from '../../lib/utils';
 import { toast } from 'sonner';
 
 interface CorrectiveActionsViewProps {

@@ -19,7 +19,7 @@ import {
   CardHeader, 
   CardTitle,
   CardDescription
-} from '@/components/ui/card';
+} from './components/ui/card';
 import { 
   fetchInventoryData, 
   saveSession,
@@ -32,8 +32,8 @@ import {
 } from './shared/services/inventoryService';
 import { auth, googleProvider } from './shared/services/firebase';
 import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
-import { LogIn, LogOut, User as UserIcon, Package, Eye } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { LogIn as LogInIcon, LogOut as LogOutIcon, User as UserIconLucide, Package as PackageIcon, Eye as EyeIcon, ClipboardList } from 'lucide-react';
+import { Button } from './components/ui/button';
 
 // Features
 import DashboardView from './features/dashboard/DashboardView';
@@ -42,7 +42,7 @@ import ChecklistView from './features/checklist/ChecklistView';
 import CorrectiveActionsView from './features/corrective/CorrectiveActionsView';
 import HistoryView from './features/history/HistoryView';
 import { ThemeProvider } from './shared/components/ThemeProvider';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { TooltipProvider } from './components/ui/tooltip';
 
 export default function App() {
   const [user, setUser] = useState<(User & { isVisitor?: boolean }) | null>(null);
@@ -221,18 +221,16 @@ export default function App() {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-slate-50 p-4">
         <Card className="max-w-md w-full border-none shadow-2xl bg-white overflow-hidden">
-          <div className="h-2 bg-blue-600 w-full" />
-          <CardHeader className="text-center pb-2">
-            <div className="flex justify-center mb-4">
-              <img 
-                src="https://raw.githubusercontent.com/francisco-wellington/logos-wm/ac3c8394a54a53584815e1d98d699464508d3e10/Logo_azul_new.png" 
-                alt="WM Saúde Logo" 
-                className="h-20 w-auto"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-            <CardDescription>Sistema de Amostragem e Inventário</CardDescription>
-          </CardHeader>
+            <CardHeader className="text-center pt-12 pb-2">
+              <div className="mx-auto flex items-center justify-center mb-0 px-4">
+                <img 
+                  src="https://raw.githubusercontent.com/francisco-wellington/logos-wm/ac3c8394a54a53584815e1d98d699464508d3e10/Logo_azul_new.png" 
+                  alt="WM Saúde Logo" 
+                  className="h-28 w-auto object-contain"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+            </CardHeader>
           <CardContent className="space-y-6 pt-6">
             <div className="text-center space-y-2">
               <p className="text-slate-600">Para acessar o sistema, por favor identifique-se.</p>
@@ -260,7 +258,7 @@ export default function App() {
                 onClick={handleVisitorAccess} 
                 className="w-full h-12 text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-3"
               >
-                <Eye className="w-5 h-5" />
+                <EyeIcon className="w-5 h-5" />
                 Acessar como Visitante
               </Button>
 
