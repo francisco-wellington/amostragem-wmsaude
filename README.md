@@ -32,6 +32,38 @@ Uma solução robusta e profissional para auditoria e inventário patrimonial, p
 - **Ícones**: [Lucide React](https://lucide.dev/)
 - **Geração de PDF**: [jsPDF](https://github.com/parallax/jsPDF)
 
+## 📋 Pré-requisitos
+
+Antes de começar, você precisará ter instalado em sua máquina:
+- [Node.js](https://nodejs.org/) (versão 18 ou superior)
+- NPM ou Yarn
+
+## 🔧 Instalação e Execução
+
+1. **Clone o repositório**
+   ```bash
+   git clone <url-do-repositorio>
+   cd <nome-do-diretorio>
+   ```
+
+2. **Instale as dependências**
+   ```bash
+   npm install
+   ```
+
+3. **Configuração de Ambiente**
+   Crie um arquivo `.env` na raiz do projeto e adicione suas credenciais do Firebase (veja o arquivo `.env.example` como referência).
+
+4. **Inicie o servidor de desenvolvimento**
+   ```bash
+   npm run dev
+   ```
+
+5. **Build para produção**
+   ```bash
+   npm run build
+   ```
+
 ## 🔐 Segurança e Regras de Acesso
 
 O sistema utiliza **Firebase Security Rules** para garantir que:

@@ -5,14 +5,14 @@
 
 import React, { useEffect, useState } from 'react';
 import { Toaster, toast } from 'sonner';
-import Layout from './components/Layout';
-import { ConnectivityIndicator } from './components/ConnectivityIndicator';
-import { LoadingScreen } from './components/LoadingUI';
+import Layout from './shared/components/Layout';
+import { ConnectivityIndicator } from './shared/components/ConnectivityIndicator';
+import { LoadingScreen } from './shared/components/LoadingUI';
 import { 
   InventoryItem, 
   InspectionSession, 
   CorrectiveAction 
-} from './types';
+} from './shared/types';
 import { 
   Card, 
   CardContent, 
@@ -29,19 +29,19 @@ import {
   generateUUID,
   subscribeToSessions,
   subscribeToActions
-} from './lib/inventoryService';
-import { auth, googleProvider } from './lib/firebase';
+} from './shared/services/inventoryService';
+import { auth, googleProvider } from './shared/services/firebase';
 import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
 import { LogIn, LogOut, User as UserIcon, Package, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-// Views
-import DashboardView from './views/DashboardView';
-import NewSamplingView from './views/NewSamplingView';
-import ChecklistView from './views/ChecklistView';
-import CorrectiveActionsView from './views/CorrectiveActionsView';
-import HistoryView from './views/HistoryView';
-import { ThemeProvider } from './components/ThemeProvider';
+// Features
+import DashboardView from './features/dashboard/DashboardView';
+import NewSamplingView from './features/newsampling/NewSamplingView';
+import ChecklistView from './features/checklist/ChecklistView';
+import CorrectiveActionsView from './features/corrective/CorrectiveActionsView';
+import HistoryView from './features/history/HistoryView';
+import { ThemeProvider } from './shared/components/ThemeProvider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 export default function App() {
