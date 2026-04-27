@@ -1,5 +1,16 @@
 {
   "entities": {
+    "authorized_users": {
+        "title": "Usuários Autorizados",
+        "description": "Lista de e-mails permitidos para acessar o sistema com permissões de escrita.",
+        "type": "object",
+        "properties": {
+            "email": { "type": "string" },
+            "role": { "type": "string", "enum": ["admin", "editor"] },
+            "addedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["email", "role"]
+    },
     "InspectionSession": {
       "title": "InspectionSession",
       "description": "Uma sessão de auditoria de patrimônio",

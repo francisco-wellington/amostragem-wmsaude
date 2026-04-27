@@ -14,14 +14,6 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isVerified() {
-      return isSignedIn() && request.auth.token.email_verified == true;
-    }
-
-    function isWhitelisted() {
-      return isVerified() && exists(/databases/$(database)/documents/authorized_users/$(request.auth.token.email));
-    }
-
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
@@ -34,23 +26,12 @@ service cloud.firestore {
       return resource.data;
     }
 
-    match /test/connection {
-      allow read: if true;
-    }
-
-    match /authorized_users/{email} {
-      // Users can check their own status
-      allow get: if isSignedIn() && request.auth.token.email == email;
-      // Writing to this list should be restricted (manual via console or admin only)
-      allow read, write: if false; 
-    }
-
     // ===============================================================
     // Collection: sessions
     // ===============================================================
     function isValidSession(data) {
       return data.keys().hasAll(['id', 'locality', 'date', 'sampleMode', 'items', 'results', 'completed', 'userId']) &&
-             data.keys().size() >= 8 &&
+             data.keys().size() >= 8 && // Allow for extra fields if needed but require core ones
              data.id is string && data.id.size() <= 128 &&
              data.locality is string && data.locality.size() <= 500 &&
              data.date is string &&
@@ -65,18 +46,19 @@ service cloud.firestore {
       // Visitors can only read
       allow list, get: if true;
 
-      // Only whitelisted users can create/edit/delete
-      allow create: if isWhitelisted() && isValidId(sessionId) && isValidSession(incoming()) && incoming().id == sessionId;
+      allow create: if isSignedIn() && isValidId(sessionId) && isValidSession(incoming()) && incoming().id == sessionId;
       
-      allow update: if isWhitelisted() && isValidId(sessionId) &&
-                      incoming().userId == existing().userId && 
-                      incoming().userId == request.auth.uid &&
+      allow update: if isSignedIn() && isValidId(sessionId) &&
+                      incoming().userId == existing().userId && // Immutable owner
+                      incoming().userId == request.auth.uid && // Must be the owner
                       (
+                        // Action: Complete session
                         (incoming().diff(existing()).affectedKeys().hasOnly(['completed', 'results', 'updatedAt', 'items'])) ||
+                        // Action: Update details
                         (incoming().diff(existing()).affectedKeys().hasOnly(['locality', 'date', 'sampleMode', 'updatedAt', 'items']))
                       );
 
-      allow delete: if isWhitelisted() && existing().userId == request.auth.uid;
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }
 
     // ===============================================================
@@ -98,19 +80,20 @@ service cloud.firestore {
       // Visitors can only read
       allow list, get: if true;
 
-      // Only whitelisted users can create/edit/delete
-      allow create: if isWhitelisted() && isValidId(actionId) && isValidAction(incoming()) && incoming().id == actionId &&
-                      exists(/databases/$(database)/documents/sessions/$(incoming().sessionId)); 
+      allow create: if isSignedIn() && isValidId(actionId) && isValidAction(incoming()) && incoming().id == actionId &&
+                      exists(/databases/$(database)/documents/sessions/$(incoming().sessionId)); // Relational integrity
 
-      allow update: if isWhitelisted() && isValidId(actionId) &&
-                      incoming().userId == existing().userId && 
-                      incoming().userId == request.auth.uid &&
+      allow update: if isSignedIn() && isValidId(actionId) &&
+                      incoming().userId == existing().userId && // Immutable owner
+                      incoming().userId == request.auth.uid && // Must be the owner
                       (
+                        // Action: Resolve action
                         (incoming().diff(existing()).affectedKeys().hasOnly(['resolved', 'resolutionDate', 'updatedAt'])) ||
+                        // Action: Edit description
                         (incoming().diff(existing()).affectedKeys().hasOnly(['description', 'updatedAt']))
                       );
 
-      allow delete: if isWhitelisted() && existing().userId == request.auth.uid;
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }
   }
 }
