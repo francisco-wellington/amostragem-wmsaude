@@ -54,7 +54,7 @@ service cloud.firestore {
              data.id is string && data.id.size() <= 128 &&
              data.locality is string && data.locality.size() <= 500 &&
              data.date is string &&
-             data.sampleMode in ['aleatoria', 'sistematica', 'manual'] &&
+             data.sampleMode in ['aleatoria', 'sistematica', 'manual', 'completo'] &&
              data.items is list && data.items.size() <= 2000 &&
              data.results is map &&
              data.completed is bool &&

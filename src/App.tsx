@@ -157,7 +157,8 @@ export default function App() {
     const sessionWithInspector = {
       ...session,
       inspectorName: user?.displayName || 'Desconhecido',
-      inspectorEmail: user?.email || ''
+      inspectorEmail: user?.email || '',
+      userId: user?.uid || ''
     };
     setActiveSession(sessionWithInspector);
     await saveSession(sessionWithInspector);
@@ -258,8 +259,8 @@ export default function App() {
 
         <Card className="max-w-md w-full border-none shadow-[0_20px_50px_rgba(0,0,0,0.08)] bg-white overflow-hidden relative z-10 transition-all duration-500 hover:shadow-[0_20px_60px_rgba(0,0,0,0.12)]">
             <div className="h-[5px] w-full bg-gradient-to-r from-[#0B4DA2] via-[#3FA9F5] to-[#0B4DA2]" />
-            <CardHeader className="text-center pt-16 pb-6">
-              <div className="mx-auto flex items-center justify-center mb-4 px-8">
+            <CardHeader className="text-center pt-12 pb-0">
+              <div className="mx-auto flex items-center justify-center mb-0 px-8">
                 <img 
                   src="https://raw.githubusercontent.com/francisco-wellington/logos-wm/ac3c8394a54a53584815e1d98d699464508d3e10/Logo_azul_new.png" 
                   alt="WM Saúde Logo" 
@@ -268,7 +269,7 @@ export default function App() {
                 />
               </div>
             </CardHeader>
-          <CardContent className="space-y-8 px-10 pb-10">
+          <CardContent className="space-y-6 px-10 pb-10">
             <div className="text-center space-y-1">
               <h2 className="text-[#1E293B] font-semibold text-lg tracking-tight">Gestão de Inventário</h2>
               <p className="text-slate-400 text-sm font-light">Identifique-se para acessar o ecossistema</p>
@@ -361,6 +362,7 @@ export default function App() {
               onStartSession={handleStartSession} 
               preSelectedCity={navParams?.city}
               preSelectedLocality={navParams?.locality}
+              userId={user?.uid || ''}
             />
           )}
           {activeTab === 'checklist' && (

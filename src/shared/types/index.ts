@@ -32,6 +32,7 @@ export interface InspectionSession {
   isTabletOnly?: boolean;
   inspectorName?: string;
   inspectorEmail?: string;
+  userId: string;
 }
 
 export interface CorrectiveAction {

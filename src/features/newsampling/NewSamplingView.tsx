@@ -41,13 +41,15 @@ interface NewSamplingViewProps {
   onStartSession: (session: InspectionSession) => Promise<void>;
   preSelectedCity?: string;
   preSelectedLocality?: string;
+  userId: string;
 }
 
 export default function NewSamplingView({ 
   inventory, 
   onStartSession,
   preSelectedCity = '',
-  preSelectedLocality = ''
+  preSelectedLocality = '',
+  userId
 }: NewSamplingViewProps) {
   const [selectedCity, setSelectedCity] = useState<string>(preSelectedCity);
   const [selectedLocality, setSelectedLocality] = useState<string>(preSelectedLocality);
@@ -149,7 +151,8 @@ export default function NewSamplingView({
       items: sample,
       results: {},
       completed: false,
-      isTabletOnly
+      isTabletOnly,
+      userId
     };
 
     await onStartSession(session);
