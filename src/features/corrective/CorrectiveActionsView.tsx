@@ -56,6 +56,7 @@ import {
   TooltipTrigger
 } from '../../components/ui/tooltip';
 import { OverlayLoading } from '../../shared/components/LoadingUI';
+import { Skeleton } from '../../components/ui/skeleton';
 import { cn } from '../../lib/utils';
 import { toast } from 'sonner';
 
@@ -64,9 +65,10 @@ interface CorrectiveActionsViewProps {
   inventory: InventoryItem[];
   onUpdateAction: (action: CorrectiveAction) => Promise<void>;
   isVisitor?: boolean;
+  isLoading?: boolean;
 }
 
-export default function CorrectiveActionsView({ actions, inventory, onUpdateAction, isVisitor }: CorrectiveActionsViewProps) {
+export default function CorrectiveActionsView({ actions, inventory, onUpdateAction, isVisitor, isLoading }: CorrectiveActionsViewProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAction, setSelectedAction] = useState<CorrectiveAction | null>(null);
   const [actionText, setActionText] = useState('');
@@ -105,9 +107,9 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
     const actionDate = new Date(action.date);
     
     const matchesSearch = (
-      action.patrimony.toLowerCase().includes(searchLower) ||
-      action.description.toLowerCase().includes(searchLower) ||
-      action.locality.toLowerCase().includes(searchLower) ||
+      (action.patrimony?.toLowerCase().includes(searchLower)) ||
+      (action.description?.toLowerCase().includes(searchLower)) ||
+      (action.locality?.toLowerCase().includes(searchLower)) ||
       (action.city && action.city.toLowerCase().includes(searchLower))
     );
 
@@ -149,8 +151,83 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="space-y-6 pb-10">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-32 w-full rounded-2xl shadow-sm" />
+          ))}
+        </div>
+        <Skeleton className="h-[200px] w-full rounded-2xl shadow-sm" />
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-20 w-full rounded-xl shadow-sm" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6 text-slate-900 dark:text-slate-100">
+    <div className="space-y-6 text-slate-900 dark:text-slate-100 pb-10">
+      {/* Stats Summary - Added to use space better */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+        <Card 
+          className="border-none shadow-sm bg-white dark:bg-slate-900 overflow-hidden group hover:shadow-md transition-all duration-300"
+          role="region"
+          aria-label={`Total de Inconformidades: ${actions.length}`}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-100/50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl">
+                <AlertCircle className="w-6 h-6" aria-hidden="true" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-tight">Total Inconformidades</p>
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 leading-none">{actions.length}</h3>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className="border-none shadow-sm bg-white dark:bg-slate-900 overflow-hidden group hover:shadow-md transition-all duration-300 ring-1 ring-orange-100/50 dark:ring-orange-900/20"
+          role="region"
+          aria-label={`Ações Pendentes: ${actions.filter(a => !a.resolved).length}`}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-orange-100/50 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 rounded-xl">
+                <Clock className="w-6 h-6" aria-hidden="true" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-tight">Ações Pendentes</p>
+                <h3 className="text-xl sm:text-2xl font-black text-orange-600 dark:text-orange-400 leading-none">{actions.filter(a => !a.resolved).length}</h3>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className="border-none shadow-sm bg-white dark:bg-slate-900 overflow-hidden group hover:shadow-md transition-all duration-300 ring-1 ring-green-100/50 dark:ring-green-900/20 col-span-2 md:col-span-1"
+          role="region"
+          aria-label={`Ações Resolvidas: ${actions.filter(a => a.resolved).length}`}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-green-100/50 dark:bg-green-900/40 text-green-600 dark:text-green-400 rounded-xl">
+                <CheckCircle2 className="w-6 h-6" aria-hidden="true" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-tight">Ações Resolvidas</p>
+                <h3 className="text-xl sm:text-2xl font-black text-green-600 dark:text-green-400 leading-none">{actions.filter(a => a.resolved).length}</h3>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="flex flex-col gap-4">
         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
           <div className="flex items-center gap-2 mb-2">
@@ -160,8 +237,8 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
             <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-tight">Filtros de Ações</h2>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1 space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:flex lg:flex-row gap-4">
+            <div className="flex-1 space-y-2 md:col-span-3 lg:col-span-1">
               <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                 <Search className="w-3.5 h-3.5" />
                 <label className="text-[10px] font-bold uppercase tracking-wider">Buscar Patrimônio</label>
@@ -177,7 +254,7 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
               </div>
             </div>
 
-            <div className="grid grid-cols-2 lg:flex lg:items-end gap-3 flex-wrap">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:flex lg:items-end gap-3 flex-wrap md:col-span-3 lg:col-span-1">
               <div className="space-y-2 lg:w-[180px]">
                 <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                   <Building2 className="w-3.5 h-3.5" />
@@ -402,7 +479,7 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
                                   className="min-h-[120px] text-sm dark:bg-slate-900 dark:border-slate-800 dark:text-white"
                                   value={actionText}
                                   onChange={(e) => setActionText(e.target.value)}
-                                  disabled={isVisitor}
+                                  disabled={isVisitor || action.resolved}
                                 />
                               </div>
 
@@ -413,7 +490,7 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
                                 </div>
                               )}
                             </div>
-                            {!isVisitor && (
+                            {!isVisitor && !action.resolved && (
                               <DialogFooter className="flex-col sm:flex-row gap-2">
                                 <Button 
                                   variant="outline"
@@ -422,15 +499,13 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
                                 >
                                   Salvar Observação
                                 </Button>
-                                {!action.resolved && (
-                                  <Button 
-                                    className="flex-1 bg-green-600 hover:bg-green-700 border-none"
-                                    onClick={() => handleAction(true)}
-                                  >
-                                    <CheckCircle2 className="w-4 h-4 mr-2" />
-                                    Resolver Agora
-                                  </Button>
-                                )}
+                                <Button 
+                                  className="flex-1 bg-green-600 hover:bg-green-700 border-none"
+                                  onClick={() => handleAction(true)}
+                                >
+                                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                                  Resolver Agora
+                                </Button>
                               </DialogFooter>
                             )}
                           </DialogContent>
@@ -465,10 +540,11 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
                 className="h-8 w-8 p-0 dark:border-slate-700 dark:hover:bg-slate-700 dark:text-slate-400"
+                aria-label="Ir para a página anterior"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-4 h-4" aria-hidden="true" />
               </Button>
-              <div className="text-xs font-bold text-slate-700 dark:text-slate-300 min-w-[3rem] text-center">
+              <div className="text-xs font-bold text-slate-700 dark:text-slate-300 min-w-[3rem] text-center" aria-live="polite">
                 Pág. {currentPage} de {totalPages}
               </div>
               <Button
@@ -477,8 +553,9 @@ export default function CorrectiveActionsView({ actions, inventory, onUpdateActi
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
                 className="h-8 w-8 p-0 dark:border-slate-700 dark:hover:bg-slate-700 dark:text-slate-400"
+                aria-label="Ir para a próxima página"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-4 h-4" aria-hidden="true" />
               </Button>
             </div>
           </div>

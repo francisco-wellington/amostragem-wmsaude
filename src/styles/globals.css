@@ -121,11 +121,30 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+    -webkit-tap-highlight-color: transparent;
+  }
   body {
-    @apply bg-background text-foreground;
-    }
+    @apply bg-background text-foreground antialiased;
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
   html {
     @apply font-sans;
-    }
+    -webkit-text-size-adjust: 100%;
+  }
+  
+  /* Prevent text selection where it doesn't make sense (buttons, nav, icons) */
+  button, 
+  nav, 
+  [role="button"],
+  .no-select {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Force standalone-like scrolling */
+  #root {
+    @apply min-h-screen flex flex-col;
+  }
 }

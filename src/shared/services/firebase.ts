@@ -2,6 +2,9 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { 
   getFirestore, 
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   collection, 
   doc, 
   setDoc, 
@@ -12,28 +15,45 @@ import {
   onSnapshot,
   updateDoc,
   deleteDoc,
-  getDocFromServer,
-  enableIndexedDbPersistence
+  getDocFromServer
 } from 'firebase/firestore';
 import firebaseConfig from '../../../firebase-applet-config.json';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
-// Enable persistence for offline mode
+const dbId = firebaseConfig.firestoreDatabaseId || '(default)';
+
+// Initialize Firestore with modern persistence strategy to remove deprecation warning
+let dbInstance;
 if (typeof window !== 'undefined') {
-  enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code === 'failed-precondition') {
-      // Multiple tabs open, persistence can only be enabled in one tab at a a time.
-      console.warn('Firestore persistence failed-precondition: multiple tabs open');
-    } else if (err.code === 'unimplemented') {
-      // The current browser does not support all of the features required to enable persistence
-      console.warn('Firestore persistence unimplemented: browser not supported');
+  let isIndexedDbAccessible = false;
+  try {
+    isIndexedDbAccessible = 'indexedDB' in window && !!window.indexedDB;
+  } catch (e) {
+    console.warn('IndexedDB property in window is not accessible (likely blocked by iframe sandbox restrictions)');
+  }
+
+  if (isIndexedDbAccessible) {
+    try {
+      dbInstance = initializeFirestore(app, {
+        localCache: persistentLocalCache({
+          tabManager: persistentMultipleTabManager()
+        })
+      }, dbId);
+    } catch (err) {
+      console.warn('Firestore initializeFirestore with cache failed, falling back to getFirestore:', err);
+      dbInstance = getFirestore(app, dbId);
     }
-  });
+  } else {
+    dbInstance = getFirestore(app, dbId);
+  }
+} else {
+  dbInstance = getFirestore(app, dbId);
 }
+
+export const db = dbInstance;
 
 export const googleProvider = new GoogleAuthProvider();
 
@@ -94,8 +114,19 @@ async function testConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
-    if(error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration. ");
+    if (error instanceof Error) {
+      const msg = error.message.toLowerCase();
+      if (
+        msg.includes('offline') || 
+        msg.includes('could not reach') || 
+        msg.includes('respond within') || 
+        msg.includes('network') ||
+        msg.includes('failed to get document')
+      ) {
+        console.warn("Please check your Firebase configuration. If your app database was just created, ensure you have run 'set_up_firebase' to provision the custom database. (Operating in offline fallback mode)");
+      } else {
+        console.warn("Firestore connection test: " + error.message);
+      }
     }
   }
 }

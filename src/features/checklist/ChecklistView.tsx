@@ -131,6 +131,17 @@ export default function ChecklistView({
     onUpdateSession({ ...session, results: newResults });
   };
 
+  const handleConservationStateChange = (conservationState: 'otimo' | 'bom' | 'regular') => {
+    const newResults = { ...session.results };
+    newResults[currentItem.Patrimônio] = {
+      ...newResults[currentItem.Patrimônio],
+      itemId: currentItem.Patrimônio,
+      conservationState,
+      timestamp: new Date().toISOString()
+    };
+    onUpdateSession({ ...session, results: newResults });
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -195,12 +206,77 @@ export default function ChecklistView({
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 text-slate-900 dark:text-slate-100">
-      {/* Header & Progress */}
-      <div className="flex flex-col gap-4">
+    <div className="space-y-6 text-slate-900 dark:text-slate-100 pb-10">
+      {/* Stats Summary - Added to use space better */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+        <Card className="border-none shadow-sm bg-white dark:bg-slate-900 overflow-hidden group hover:shadow-md transition-all duration-300">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-100/50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl">
+                <CheckSquare className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Progresso</p>
+                <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 leading-none">{verifiedItems} <span className="text-sm font-medium text-slate-400">/ {totalItems}</span></h3>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-sm bg-white dark:bg-slate-900 overflow-hidden group hover:shadow-md transition-all duration-300 ring-1 ring-green-100/50 dark:ring-green-900/20">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-green-100/50 dark:bg-green-900/40 text-green-600 dark:text-green-400 rounded-xl">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Conformes</p>
+                <h3 className="text-2xl font-black text-green-600 dark:text-green-400 leading-none">
+                  {Object.values(session.results).filter(r => r.status === 'conforme').length}
+                </h3>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-sm bg-white dark:bg-slate-900 overflow-hidden group hover:shadow-md transition-all duration-300 ring-1 ring-red-100/50 dark:ring-red-900/20">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-red-100/50 dark:bg-red-900/40 text-red-600 dark:text-red-400 rounded-xl">
+                <XCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Não Conformes</p>
+                <h3 className="text-2xl font-black text-red-600 dark:text-red-400 leading-none">
+                  {Object.values(session.results).filter(r => r.status === 'nao_conforme').length}
+                </h3>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-sm bg-white dark:bg-slate-900 overflow-hidden group hover:shadow-md transition-all duration-300 ring-1 ring-amber-100/50 dark:ring-amber-900/20">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-amber-100/50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-xl">
+                <MapPin className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Localiz. Incorreta</p>
+                <h3 className="text-2xl font-black text-amber-600 dark:text-amber-400 leading-none">
+                  {Object.values(session.results).filter(r => r.status === 'localizacao_incorreta').length}
+                </h3>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Header & Progress (Simplified since stats are above) */}
+      <div className="flex flex-col gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white uppercase">{session.locality}</h2>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white uppercase leading-tight">{session.locality}</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">
               {session.sampleMode === 'aleatoria' && 'Amostragem Aleatória (30%)'}
               {session.sampleMode === 'completo' && 'Inspeção Completa (100%)'}
@@ -236,9 +312,9 @@ export default function ChecklistView({
         <Progress value={progress} className="h-2 bg-slate-200 dark:bg-slate-800" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Item List Sidebar */}
-        <Card className="lg:col-span-1 border-none shadow-sm bg-white dark:bg-slate-900 overflow-hidden flex flex-col h-[300px] lg:h-[600px]">
+        <Card className="md:col-span-1 border-none shadow-sm bg-white dark:bg-slate-900 overflow-hidden flex flex-col h-[250px] md:h-[600px]">
           <CardHeader className="py-4 border-b border-slate-50 dark:border-slate-800 shrink-0">
             <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Lista da Amostra</CardTitle>
           </CardHeader>
@@ -246,7 +322,7 @@ export default function ChecklistView({
             <div className="p-2 space-y-1">
               {session.items.map((item, index) => (
                 <button
-                  key={item.Patrimônio}
+                  key={`${item.Patrimônio || 'desconhecido'}-${index}`}
                   onClick={() => setCurrentIndex(index)}
                   className={cn(
                     "w-full flex items-center gap-3 p-3 rounded-lg transition-all text-left",
@@ -273,7 +349,7 @@ export default function ChecklistView({
         </Card>
 
         {/* Active Item Form */}
-        <Card className="lg:col-span-2 border-none shadow-lg bg-white dark:bg-slate-900 overflow-hidden flex flex-col">
+        <Card className="md:col-span-2 border-none shadow-lg bg-white dark:bg-slate-900 overflow-hidden flex flex-col">
           <div className={cn("h-1 w-full", getStatusColor(currentResult?.status))} />
           <CardHeader>
             <div className="flex items-center justify-between mb-2">
@@ -302,6 +378,7 @@ export default function ChecklistView({
                   <Button
                     key={status}
                     variant={currentResult?.status === status ? 'default' : 'outline'}
+                    aria-pressed={currentResult?.status === status}
                     className={cn(
                       "h-auto py-4 flex flex-col gap-1 items-center justify-center text-center dark:border-slate-700",
                       currentResult?.status === status && status === 'conforme' && "bg-green-600 hover:bg-green-700 ring-offset-slate-900 border-none",
@@ -312,13 +389,78 @@ export default function ChecklistView({
                     )}
                     onClick={() => handleStatusChange(status)}
                   >
-                    {status === 'conforme' && <CheckCircle2 className="w-5 h-5 mb-1" />}
-                    {status === 'nao_conforme' && <XCircle className="w-5 h-5 mb-1" />}
-                    {status === 'nao_localizado' && <Eye className="w-5 h-5 mb-1" />}
-                    {status === 'localizacao_incorreta' && <MapPin className="w-5 h-5 mb-1" />}
+                    {status === 'conforme' && <CheckCircle2 className="w-5 h-5 mb-1" aria-hidden="true" />}
+                    {status === 'nao_conforme' && <XCircle className="w-5 h-5 mb-1" aria-hidden="true" />}
+                    {status === 'nao_localizado' && <Eye className="w-5 h-5 mb-1" aria-hidden="true" />}
+                    {status === 'localizacao_incorreta' && <MapPin className="w-5 h-5 mb-1" aria-hidden="true" />}
                     <span className="text-xs font-bold">{getStatusLabel(status)}</span>
                   </Button>
                 ))}
+              </div>
+            </div>
+
+            {/* Estado de Conservação */}
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Estado de Conservação</label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  {
+                    id: 'otimo',
+                    label: 'Ótimo',
+                    icon: '⭐',
+                    short: 'Aspecto de novo',
+                    desc: 'Aparência de novo, sem avarias e sem sinais relevantes de uso.',
+                    activeClass: 'border-emerald-500 bg-emerald-50/55 dark:bg-emerald-950/20 text-emerald-950 dark:text-emerald-300 ring-2 ring-emerald-500/30',
+                    hoverClass: 'hover:border-emerald-300 hover:bg-emerald-50/20 dark:hover:bg-slate-800',
+                    badgeColor: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                  },
+                  {
+                    id: 'bom',
+                    label: 'Bom',
+                    icon: '👍',
+                    short: 'Leves sinais',
+                    desc: 'Funcionando perfeitamente, com leves sinais de uso, sem impacto.',
+                    activeClass: 'border-blue-500 bg-blue-50/55 dark:bg-blue-950/20 text-blue-950 dark:text-blue-300 ring-2 ring-blue-500/30',
+                    hoverClass: 'hover:border-blue-300 hover:bg-blue-50/20 dark:hover:bg-slate-800',
+                    badgeColor: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
+                  },
+                  {
+                    id: 'regular',
+                    label: 'Regular',
+                    icon: '⚠️',
+                    short: 'Desgaste visível',
+                    desc: 'Funcionando, porém com marcas evidentes de uso e pequenas avarias.',
+                    activeClass: 'border-amber-500 bg-amber-50/55 dark:bg-amber-950/20 text-amber-950 dark:text-amber-300 ring-2 ring-amber-500/30',
+                    hoverClass: 'hover:border-amber-300 hover:bg-amber-50/20 dark:hover:bg-slate-800',
+                    badgeColor: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+                  }
+                ].map((item) => {
+                  const isSelected = currentResult?.conservationState === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => handleConservationStateChange(item.id as 'otimo' | 'bom' | 'regular')}
+                      className={cn(
+                        "p-4 rounded-xl border text-left flex flex-col gap-2 transition-all cursor-pointer h-full justify-between dark:border-slate-800",
+                        isSelected ? item.activeClass : cn("bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-300", item.hoverClass)
+                      )}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-1.5 font-bold text-sm">
+                          <span>{item.icon}</span>
+                          <span>{item.label}</span>
+                        </div>
+                        <span className={cn("text-[9px] font-black uppercase px-2 py-0.5 rounded-full shrink-0", isSelected ? item.badgeColor : "bg-slate-100 dark:bg-slate-800 text-slate-500")}>
+                          {item.short}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                        {item.desc}
+                      </p>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -341,7 +483,7 @@ export default function ChecklistView({
               )}
             </div>
 
-            <div className="space-y-3">
+            <div className=" hidden space-y-3">
               <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Evidência Fotográfica (Opcional)</Label>
               <div 
                 onClick={() => fileInputRef.current?.click()}
@@ -384,17 +526,24 @@ export default function ChecklistView({
           </CardContent>
 
           <CardFooter className="p-6 border-t border-slate-50 dark:border-slate-800 flex justify-between bg-slate-50/50 dark:bg-slate-900/50">
-            <Button variant="ghost" onClick={prevItem} disabled={currentIndex === 0} className="dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800">
-              <ChevronLeft className="w-5 h-5 mr-2" />
+            <Button 
+              variant="ghost" 
+              onClick={prevItem} 
+              disabled={currentIndex === 0} 
+              className="dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800"
+              aria-label="Voltar para o item anterior"
+            >
+              <ChevronLeft className="w-5 h-5 mr-2" aria-hidden="true" />
               Anterior
             </Button>
             <Button 
               className="bg-blue-600 hover:bg-blue-700 px-8 border-none"
               onClick={nextItem}
               disabled={!currentResult}
+              aria-label={currentIndex === totalItems - 1 ? 'Prosseguir para revisão e finalização' : 'Salvar e ir para o próximo item'}
             >
               {currentIndex === totalItems - 1 ? 'Revisar e Finalizar' : 'Próximo Item'}
-              <ChevronRight className="w-5 h-5 ml-2" />
+              <ChevronRight className="w-5 h-5 ml-2" aria-hidden="true" />
             </Button>
           </CardFooter>
         </Card>
@@ -432,16 +581,28 @@ export default function ChecklistView({
                 <div className="border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
                   <ScrollArea className="h-[300px]">
                     <div className="divide-y divide-slate-50 dark:divide-slate-800/50">
-                      {session.items.map((item) => {
+                      {session.items.map((item, index) => {
                         const res = session.results[item.Patrimônio];
                         return (
-                          <div key={item.Patrimônio} className="flex flex-col p-3 bg-white dark:bg-slate-900">
+                          <div key={`${item.Patrimônio || 'desconhecido'}-${index}`} className="flex flex-col p-3 bg-white dark:bg-slate-900">
                             <div className="flex items-center justify-between">
                               <div className="flex flex-col">
                                 <span className="text-xs font-bold dark:text-slate-200">{item.Patrimônio}</span>
                                 <span className="text-[10px] text-slate-500 dark:text-slate-500 truncate max-w-[200px] md:max-w-[350px]">{item.Descrição}</span>
                               </div>
                               <div className="flex items-center gap-3">
+                                {res?.conservationState && (
+                                  <Badge className={cn(
+                                    "text-[10px] font-bold border-none py-0.5 px-2",
+                                    res.conservationState === 'otimo' && "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400",
+                                    res.conservationState === 'bom' && "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400",
+                                    res.conservationState === 'regular' && "bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400"
+                                  )}>
+                                    {res.conservationState === 'otimo' && '⭐ Ótimo'}
+                                    {res.conservationState === 'bom' && '👍 Bom'}
+                                    {res.conservationState === 'regular' && '⚠️ Regular'}
+                                  </Badge>
+                                )}
                                 {res?.evidence && <Camera className="w-4 h-4 text-blue-500 dark:text-blue-400" />}
                                 <Badge className={cn("text-[10px] border-none text-white", getStatusColor(res?.status))}>
                                   {res ? getStatusLabel(res.status) : 'Pendente'}

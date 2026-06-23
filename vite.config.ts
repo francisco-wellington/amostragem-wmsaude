@@ -15,30 +15,62 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+        includeAssets: ['favicon.png', 'apple-touch-icon.png', 'masked-icon.svg', 'Logo_azul_new.png'],
         manifest: {
-          name: 'Patrimônio Audit Pro',
-          short_name: 'AuditPro',
+          name: 'Sistema de Auditoria WMS',
+          short_name: 'Amostragem WM',
           description: 'Sistema Profissional de Auditoria e Inventário Patrimonial',
-          theme_color: '#2563eb', // blue-600
+          theme_color: '#2563eb',
           background_color: '#ffffff',
           display: 'standalone',
+          orientation: 'portrait',
           icons: [
             {
-              src: 'pwa-192x192.png',
+              src: 'https://raw.githubusercontent.com/francisco-wellington/logos-wm/abc275efe35d2c91637231ab97fccdeb5e669bf5/favicon.png',
               sizes: '192x192',
               type: 'image/png'
             },
             {
-              src: 'pwa-512x512.png',
+              src: 'https://raw.githubusercontent.com/francisco-wellington/logos-wm/abc275efe35d2c91637231ab97fccdeb5e669bf5/favicon.png',
               sizes: '512x512',
               type: 'image/png'
             },
             {
-              src: 'pwa-512x512.png',
+              src: 'https://raw.githubusercontent.com/francisco-wellington/logos-wm/abc275efe35d2c91637231ab97fccdeb5e669bf5/favicon.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable'
+            }
+          ]
+        },
+        workbox: {
+          maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          runtimeCaching: [
+            {
+              urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'google-fonts-cache',
+                expiration: {
+                  maxEntries: 10,
+                  maxAgeSeconds: 60 * 60 * 24 * 365
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
+            },
+            {
+              urlPattern: /^https:\/\/raw\.githubusercontent\.com\/.*/i,
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'github-assets-cache',
+                expiration: {
+                  maxEntries: 20,
+                  maxAgeSeconds: 60 * 60 * 24 * 30
+                }
+              }
             }
           ]
         }
@@ -46,6 +78,9 @@ export default defineConfig(({ mode }) => {
     ],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+    },
+    optimizeDeps: {
+      include: ['motion/react', 'lucide-react', 'recharts', 'firebase/app', 'firebase/firestore', 'firebase/auth'],
     },
     resolve: {
       alias: {

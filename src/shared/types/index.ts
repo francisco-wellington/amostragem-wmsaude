@@ -18,6 +18,7 @@ export interface InspectionResult {
   evidence?: string; // base64 image
   notes?: string;
   timestamp: string;
+  conservationState?: 'otimo' | 'bom' | 'regular';
 }
 
 export interface InspectionSession {

@@ -177,75 +177,77 @@ export default function NewSamplingView({
           <CardTitle className="text-xl dark:text-white">Parâmetros da Inspeção</CardTitle>
           <CardDescription className="dark:text-slate-400">Defina onde e como a amostragem será realizada.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-8">
-          {/* City Selection */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <Label htmlFor="city" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                Cidade <span className="text-red-500">*</span>
-              </Label>
-              {showValidation && !selectedCity && (
-                <span className="text-[10px] font-bold text-red-500 uppercase">Obrigatório</span>
-              )}
-            </div>
-            <Select 
-              value={selectedCity} 
-              onValueChange={(val) => {
-                setSelectedCity(val);
-                setSelectedLocality(''); // Reset locality when city changes
-                if (val) setShowValidation(false);
-              }}
-            >
-              <SelectTrigger 
-                id="city" 
-                className={cn(
-                  "h-12 text-lg transition-all dark:bg-slate-900 dark:border-slate-800",
-                  showValidation && !selectedCity ? "border-red-300 bg-red-50 dark:bg-red-900/10" : ""
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* City Selection */}
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="city" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Cidade <span className="text-red-500">*</span>
+                </Label>
+                {showValidation && !selectedCity && (
+                  <span className="text-[10px] font-bold text-red-500 uppercase">Obrigatório</span>
                 )}
+              </div>
+              <Select 
+                value={selectedCity} 
+                onValueChange={(val) => {
+                  setSelectedCity(val);
+                  setSelectedLocality(''); // Reset locality when city changes
+                  if (val) setShowValidation(false);
+                }}
               >
-                <SelectValue placeholder="Selecione uma cidade..." />
-              </SelectTrigger>
-              <SelectContent className="dark:bg-slate-900 dark:border-slate-800">
-                {cities.map(city => (
-                  <SelectItem key={city} value={city}>{city}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+                <SelectTrigger 
+                  id="city" 
+                  className={cn(
+                    "h-12 text-lg transition-all dark:bg-slate-900 dark:border-slate-800",
+                    showValidation && !selectedCity ? "border-red-300 bg-red-50 dark:bg-red-900/10" : ""
+                  )}
+                >
+                  <SelectValue placeholder="Selecione uma cidade..." />
+                </SelectTrigger>
+                <SelectContent className="dark:bg-slate-900 dark:border-slate-800">
+                  {cities.map(city => (
+                    <SelectItem key={city} value={city}>{city}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Locality Selection */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <Label htmlFor="locality" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                Localidade <span className="text-red-500">*</span>
-              </Label>
-              {showValidation && !selectedLocality && (
-                <span className="text-[10px] font-bold text-red-500 uppercase">Obrigatório</span>
-              )}
-            </div>
-            <Select 
-              value={selectedLocality} 
-              onValueChange={(val) => {
-                setSelectedLocality(val);
-                if (val) setShowValidation(false);
-              }}
-              disabled={!selectedCity}
-            >
-              <SelectTrigger 
-                id="locality" 
-                className={cn(
-                  "h-12 text-lg transition-all dark:bg-slate-900 dark:border-slate-800",
-                  showValidation && !selectedLocality ? "border-red-300 bg-red-50 dark:bg-red-900/10" : ""
+            {/* Locality Selection */}
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="locality" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Localidade <span className="text-red-500">*</span>
+                </Label>
+                {showValidation && !selectedLocality && (
+                  <span className="text-[10px] font-bold text-red-500 uppercase">Obrigatório</span>
                 )}
+              </div>
+              <Select 
+                value={selectedLocality} 
+                onValueChange={(val) => {
+                  setSelectedLocality(val);
+                  if (val) setShowValidation(false);
+                }}
+                disabled={!selectedCity}
               >
-                <SelectValue placeholder={selectedCity ? "Selecione uma localidade..." : "Selecione primeiro a cidade"} />
-              </SelectTrigger>
-              <SelectContent className="dark:bg-slate-900 dark:border-slate-800">
-                {localities.map(loc => (
-                  <SelectItem key={loc} value={loc}>{loc}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <SelectTrigger 
+                  id="locality" 
+                  className={cn(
+                    "h-12 text-lg transition-all dark:bg-slate-900 dark:border-slate-800",
+                    showValidation && !selectedLocality ? "border-red-300 bg-red-50 dark:bg-red-900/10" : ""
+                  )}
+                >
+                  <SelectValue placeholder={selectedCity ? "Selecione uma localidade..." : "Cidade não selecionada"} />
+                </SelectTrigger>
+                <SelectContent className="dark:bg-slate-900 dark:border-slate-800">
+                  {localities.map(loc => (
+                    <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <AnimatePresence>
@@ -316,6 +318,8 @@ export default function NewSamplingView({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <button
                 onClick={() => setSampleMode('aleatoria')}
+                aria-pressed={sampleMode === 'aleatoria'}
+                aria-label="Método de amostragem aleatória: sorteio de 30% dos itens"
                 className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all text-center ${
                   sampleMode === 'aleatoria' 
                     ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-900/20' 
@@ -323,7 +327,7 @@ export default function NewSamplingView({
                 }`}
               >
                 <div className={`p-3 rounded-lg ${sampleMode === 'aleatoria' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
-                  <Dices className="w-6 h-6" />
+                  <Dices className="w-6 h-6" aria-hidden="true" />
                 </div>
                 <div>
                   <p className="font-bold text-slate-900 dark:text-white">Aleatória</p>
@@ -333,6 +337,8 @@ export default function NewSamplingView({
 
               <button
                 onClick={() => setSampleMode('completo')}
+                aria-pressed={sampleMode === 'completo'}
+                aria-label="Método de amostragem completo: inspeção de 100% dos itens"
                 className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all text-center ${
                   sampleMode === 'completo' 
                     ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-900/20' 
@@ -340,7 +346,7 @@ export default function NewSamplingView({
                 }`}
               >
                 <div className={`p-3 rounded-lg ${sampleMode === 'completo' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
-                  <CheckCircle2 className="w-6 h-6" />
+                  <CheckCircle2 className="w-6 h-6" aria-hidden="true" />
                 </div>
                 <div>
                   <p className="font-bold text-slate-900 dark:text-white">Completo</p>
@@ -350,6 +356,8 @@ export default function NewSamplingView({
 
               <button
                 onClick={() => setSampleMode('manual')}
+                aria-pressed={sampleMode === 'manual'}
+                aria-label="Método de amostragem manual: inserir patrimônios manualmente"
                 className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all text-center ${
                   sampleMode === 'manual' 
                     ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-900/20' 
@@ -357,7 +365,7 @@ export default function NewSamplingView({
                 }`}
               >
                 <div className={`p-3 rounded-lg ${sampleMode === 'manual' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
-                  <Edit3 className="w-6 h-6" />
+                  <Edit3 className="w-6 h-6" aria-hidden="true" />
                 </div>
                 <div>
                   <p className="font-bold text-slate-900 dark:text-white">Manual</p>
@@ -402,9 +410,10 @@ export default function NewSamplingView({
                 : "bg-blue-600 hover:bg-blue-700 shadow-blue-200 dark:shadow-none"
             )}
             onClick={handleStart}
+            aria-label="Gerar a amostragem configurada e iniciar a inspeção"
           >
             Gerar Amostra e Iniciar
-            <ArrowRight className="w-5 h-5 ml-2" />
+            <ArrowRight className="w-5 h-5 ml-2" aria-hidden="true" />
           </Button>
         </CardFooter>
       </Card>
