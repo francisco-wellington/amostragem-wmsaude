@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        injectRegister: 'inline',
         includeAssets: ['favicon.png', 'apple-touch-icon.png', 'masked-icon.svg', 'Logo_azul_new.png'],
         manifest: {
           name: 'Sistema de Auditoria WMS',

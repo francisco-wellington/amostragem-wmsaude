@@ -10,7 +10,9 @@ import {
   X,
   LogOut,
   Sun,
-  Moon
+  Moon,
+  Download,
+  Smartphone
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from '../../components/ui/button';
@@ -30,11 +32,72 @@ interface LayoutProps {
 export default function Layout({ children, activeTab, setActiveTab, user, onLogout, isMonitorMode = false }: LayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+  const [showIosTip, setShowIosTip] = useState(false);
 
   // Close mobile menu when tab changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [activeTab]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // Initial check for iOS PWA eligibility
+    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    
+    if (isIos && !isStandalone) {
+      setIsInstallable(true);
+    } else if (isStandalone) {
+      setIsInstallable(false);
+    }
+
+    const handleAppInstalled = () => {
+      setIsInstallable(false);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    if (isIos) {
+      setShowIosTip(true);
+      return;
+    }
+
+    if (!deferredPrompt) {
+      alert("Para instalar, basta tocar no ícone de três pontos (ou menu do seu navegador) e selecionar 'Adicionar à Tela Inicial' ou 'Instalar Aplicativo'.");
+      return;
+    }
+
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setIsInstallable(false);
+        setDeferredPrompt(null);
+      }
+    } catch (err) {
+      console.warn("PWA prompt failed:", err);
+    }
+  };
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -107,6 +170,37 @@ export default function Layout({ children, activeTab, setActiveTab, user, onLogo
       </ScrollArea>
 
       <div className="p-4 border-t border-slate-800 space-y-2">
+        {isInstallable && (
+          <div className={cn(
+            "p-3 rounded-xl bg-slate-800/40 border border-slate-800/80 flex flex-col gap-2.5 mb-2",
+            !isSidebarOpen && "lg:p-1 lg:items-center lg:mx-0"
+          )}>
+            <div className={cn("flex items-center gap-2", !isSidebarOpen && "lg:justify-center")}>
+              <div className="p-1.5 bg-blue-500/10 rounded-lg text-blue-400">
+                <Smartphone className="w-4 h-4" />
+              </div>
+              {isSidebarOpen && (
+                <div className="flex flex-col overflow-hidden text-left">
+                  <span className="text-xs font-bold text-slate-250 text-slate-200">App Móvel</span>
+                  <span className="text-[10px] text-slate-500 leading-none">Instalar para uso offline</span>
+                </div>
+              )}
+            </div>
+            <Button 
+              size="sm" 
+              onClick={handleInstallClick}
+              className={cn(
+                "w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-8 flex items-center justify-center gap-1.5 rounded-lg active:scale-95 transition-all text-center",
+                !isSidebarOpen && "lg:p-0 lg:h-8 lg:w-8 lg:min-w-0"
+              )}
+              title="Instalar Aplicativo"
+            >
+              <Download className="w-3.5 h-3.5" />
+              {isSidebarOpen && <span>Instalar</span>}
+            </Button>
+          </div>
+        )}
+
         <div className={cn(
           "flex items-center gap-3 px-4 py-2 rounded-lg bg-slate-800/50 overflow-hidden",
           !isSidebarOpen && "lg:justify-center lg:px-0"
@@ -214,6 +308,17 @@ export default function Layout({ children, activeTab, setActiveTab, user, onLogo
                  <OfflineBadge />
                </div>
                <div className="flex items-center gap-2 sm:gap-4">
+                  {isInstallable && (
+                    <Button
+                      onClick={handleInstallClick}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] px-2.5 py-1.5 h-8 gap-1.5 rounded-lg shrink-0 transition-all flex items-center shadow-md shadow-blue-600/10 active:scale-95 text-center cursor-pointer mr-1"
+                      title="Instalar Aplicativo de Inventário"
+                      aria-label="Instalar aplicativo"
+                    >
+                      <Download className="w-3.5 h-3.5 animate-bounce" style={{ animationDuration: '3s' }} />
+                      <span className="hidden sm:inline">Baixar App</span>
+                    </Button>
+                  )}
                  <div className="hidden xl:block text-sm text-slate-500 dark:text-slate-400">
                    {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                  </div>
@@ -246,6 +351,72 @@ export default function Layout({ children, activeTab, setActiveTab, user, onLogo
           </motion.div>
         </div>
       </main>
+
+      {/* Modal especial de dica do iOS */}
+      <AnimatePresence>
+        {showIosTip && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowIosTip(false)}
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 text-slate-800 dark:text-slate-100"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl relative"
+            >
+              <button
+                onClick={() => setShowIosTip(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <div className="mx-auto w-12 h-12 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center rounded-2xl mb-4 font-bold text-lg">
+                iOS
+              </div>
+              
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">WM Saúde no iOS</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
+                Para instalar a plataforma e utilizá-la em tela cheia na sua tela de início, siga estes passos rápidos:
+              </p>
+              
+              <div className="space-y-4 text-left bg-slate-50 dark:bg-slate-950/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 mb-6">
+                <div className="flex gap-3 items-start">
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-bold shrink-0 mt-0.5">1</span>
+                  <p className="text-xs text-[#1E293B] dark:text-slate-300 leading-normal">
+                    Abra esta página no navegador <strong className="font-semibold text-[#0B4DA2] dark:text-[#3FA9F5]">Safari</strong>.
+                  </p>
+                </div>
+                <div className="flex gap-3 items-start">
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-bold shrink-0 mt-0.5">2</span>
+                  <p className="text-xs text-[#1E293B] dark:text-slate-300 leading-normal">
+                    Toque no botão de <strong className="font-semibold">Compartilhar</strong> (ícone de quadrado com flecha pra cima na barra de ferramentas).
+                  </p>
+                </div>
+                <div className="flex gap-3 items-start">
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-bold shrink-0 mt-0.5">3</span>
+                  <p className="text-xs text-[#1E293B] dark:text-slate-300 leading-normal">
+                    Role as opções e toque em <strong className="font-bold text-blue-600 dark:text-blue-400">Adicionar à Tela de Início</strong>.
+                  </p>
+                </div>
+              </div>
+
+              <Button 
+                onClick={() => setShowIosTip(false)}
+                className="w-full bg-[#0B4DA2] hover:bg-[#0B4DA2]/90 text-white font-bold text-xs py-2.5 h-10 rounded-xl transition-all active:scale-[0.98]"
+              >
+                Entendi
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
